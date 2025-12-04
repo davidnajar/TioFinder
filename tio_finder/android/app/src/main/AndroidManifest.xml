@@ -1,6 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Location permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    
+    <!-- Vibration permission -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    
     <application
-        android:label="tio_finder"
+        android:label="Tió Finder"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
