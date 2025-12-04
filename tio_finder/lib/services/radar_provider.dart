@@ -148,10 +148,15 @@ class RadarProvider extends ChangeNotifier {
       
       // Si estem prou a prop, marcar com a pendent de confirmació
       if (closestRealTioDistance < foundThreshold) {
-        _pendingFoundTio = closestRealTio;
+        // Només actualitzar si és un tió diferent
+        if (_pendingFoundTio?.id != closestRealTio.id) {
+          _pendingFoundTio = closestRealTio;
+        }
       } else {
         // Si ens allunyem del llindar, però encara en fine search, netejar pending
-        _pendingFoundTio = null;
+        if (_pendingFoundTio != null) {
+          _pendingFoundTio = null;
+        }
       }
     } else {
       // Si no hi ha tiós reals a prop, desactivar fine search mode
@@ -169,8 +174,9 @@ class RadarProvider extends ChangeNotifier {
   void Function(RadarTarget tio)? onTioFoundCallback;
 
   /// Confirma que s'ha trobat el tió pendent (cridat quan l'usuari prem el botó)
-  void confirmFoundTio() {
-    if (_pendingFoundTio == null) return;
+  /// Retorna true si s'ha confirmat correctament, false si no hi havia tió pendent
+  bool confirmFoundTio() {
+    if (_pendingFoundTio == null) return false;
     
     final tio = _pendingFoundTio!;
     _onRealTioFound(tio);
@@ -180,6 +186,7 @@ class RadarProvider extends ChangeNotifier {
     _isFineSearchMode = false;
     
     notifyListeners();
+    return true;
   }
 
   void _onRealTioFound(RadarTarget tio) {

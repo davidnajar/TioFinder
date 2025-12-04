@@ -186,8 +186,9 @@ class _RadarScreenState extends State<RadarScreen> {
   Widget _buildFoundButton(RadarProvider provider) {
     return ElevatedButton(
       onPressed: () {
-        provider.confirmFoundTio();
-        _showFoundDialog();
+        if (provider.confirmFoundTio()) {
+          _showFoundDialog();
+        }
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.greenAccent,
