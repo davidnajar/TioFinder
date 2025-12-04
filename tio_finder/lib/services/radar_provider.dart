@@ -119,18 +119,29 @@ class RadarProvider extends ChangeNotifier {
 
     // Si hi ha múltiples zones configurades, usar-les
     if (fakeTionsZones.isNotEmpty) {
+      // Calcular el nombre base per zona i el residu
+      final int totalCount = fakeTionsCount ?? 0;
+      final int zonesCount = fakeTionsZones.length;
+      final int basePerZone = totalCount > 0 ? totalCount ~/ zonesCount : 0;
+      int remainder = totalCount > 0 ? totalCount % zonesCount : 0;
+      
       // Generar fake tions per a cada zona
       for (final zone in fakeTionsZones) {
-        // Calcular el nombre de fake tions per zona proporcionalment
-        final zoneCount = fakeTionsCount != null 
-            ? (fakeTionsCount / fakeTionsZones.length).ceil()
-            : null;
+        // Distribuir el residu a les primeres zones
+        final int zoneCount;
+        if (fakeTionsCount != null) {
+          zoneCount = basePerZone + (remainder > 0 ? 1 : 0);
+          if (remainder > 0) remainder--;
+        } else {
+          // Si no hi ha count, cada zona genera el seu propi nombre aleatori
+          zoneCount = 0; // null equivalent per al generador
+        }
         
         final fakeTargets = _fakeGenerator.generateSpacedFakeTargets(
           centerLat: zone.lat,
           centerLng: zone.lng,
           maxRadius: zone.radius,
-          count: zoneCount,
+          count: fakeTionsCount != null ? (zoneCount > 0 ? zoneCount : null) : null,
         );
         _allTargets.addAll(fakeTargets);
       }

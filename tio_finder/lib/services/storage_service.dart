@@ -171,6 +171,8 @@ class StorageService {
           .map((item) => FakeTionsZone.fromJson(item as Map<String, dynamic>))
           .toList();
     } catch (e) {
+      // Retornar llista buida si hi ha error de parsing
+      // Això pot passar si les dades guardades estan corruptes
       return [];
     }
   }
