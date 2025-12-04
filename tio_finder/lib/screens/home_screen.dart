@@ -1,8 +1,44 @@
 import 'package:flutter/material.dart';
 
-/// Pantalla principal amb opcions per amagar o buscar tiós
-class HomeScreen extends StatelessWidget {
+/// Pantalla principal amb opcions per buscar tiós
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _secretTapCount = 0;
+  DateTime? _lastTapTime;
+
+  void _onTitleTapped(BuildContext context) {
+    final now = DateTime.now();
+
+    // Si ha passat massa temps des de l'últim toc, reiniciem el comptador
+    if (_lastTapTime == null ||
+        now.difference(_lastTapTime!) > const Duration(seconds: 2)) {
+      _secretTapCount = 0;
+    }
+
+    _lastTapTime = now;
+    _secretTapCount++;
+
+    if (_secretTapCount >= 10) {
+      _secretTapCount = 0;
+
+      // Navegar al menú ocult d'"amagar tió"
+      Navigator.pushNamed(context, '/hide');
+
+      // Opcional: mostrar un petit SnackBar per indicar que és un mode secret
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mode AMAGAR TIÓ desbloquejat 🪵'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,14 +51,17 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Títol
-                const Text(
-                  '🪵 TIÓ FINDER',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 4,
+                // Títol amb Easter Egg
+                GestureDetector(
+                  onTap: () => _onTitleTapped(context),
+                  child: const Text(
+                    '🪵 TIÓ FINDER',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 4,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -34,17 +73,11 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 80),
-                
-                // Botó Amagar Tió
-                _buildMenuButton(
-                  context,
-                  icon: Icons.add_location_alt,
-                  label: 'AMAGAR TIÓ',
-                  color: Colors.orange,
-                  onTap: () => Navigator.pushNamed(context, '/hide'),
-                ),
+
+                // (Botó amagar tió ocult → eliminat de la UI)
+
                 const SizedBox(height: 24),
-                
+
                 // Botó Radar
                 _buildMenuButton(
                   context,
@@ -53,34 +86,35 @@ class HomeScreen extends StatelessWidget {
                   color: Colors.greenAccent,
                   onTap: () => Navigator.pushNamed(context, '/radar'),
                 ),
+
                 const SizedBox(height: 80),
-                
-                // Instruccions
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildLegendItem(
-                        color: Colors.greenAccent,
-                        text: 'Tió real',
-                      ),
-                      const SizedBox(height: 8),
-                      _buildLegendItem(
-                        color: Colors.yellowAccent,
-                        text: 'Pista falsa persistent',
-                      ),
-                      const SizedBox(height: 8),
-                      _buildLegendItem(
-                        color: Colors.redAccent,
-                        text: 'Pista falsa que desapareix',
-                      ),
-                    ],
-                  ),
-                ),
+
+                // Llegenda opcional (segueix comentada si no la vols)
+                // Container(
+                //   padding: const EdgeInsets.all(16),
+                //   decoration: BoxDecoration(
+                //     color: Colors.white.withValues(alpha: 0.05),
+                //     borderRadius: BorderRadius.circular(12),
+                //   ),
+                //   child: Column(
+                //     children: [
+                //       _buildLegendItem(
+                //         color: Colors.greenAccent,
+                //         text: 'Tió real',
+                //       ),
+                //       const SizedBox(height: 8),
+                //       _buildLegendItem(
+                //         color: Colors.yellowAccent,
+                //         text: 'Pista falsa persistent',
+                //       ),
+                //       const SizedBox(height: 8),
+                //       _buildLegendItem(
+                //         color: Colors.redAccent,
+                //         text: 'Pista falsa que desapareix',
+                //       ),
+                //     ],
+                //   ),
+                // ),
               ],
             ),
           ),

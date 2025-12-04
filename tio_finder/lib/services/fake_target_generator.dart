@@ -31,7 +31,7 @@ class FakeTargetGenerator {
       // Determinar tipus (40% vanish, 60% persistent)
       final type = _random.nextDouble() < _fakeVanishProbability
           ? TargetType.fakeVanish
-          : TargetType.fakePersistent;
+          : TargetType.fakeVanish;
 
       targets.add(RadarTarget(
         lat: point.lat,
