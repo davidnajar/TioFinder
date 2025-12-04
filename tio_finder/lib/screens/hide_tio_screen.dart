@@ -369,39 +369,195 @@ class _HideTioScreenState extends State<HideTioScreen> {
               }
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           
-          // Radi de la zona
-          _buildSettingRow(
-            label: 'Zona (m)',
-            value: '${provider.fakeTionsZoneRadius.toInt()}',
-            onDecrease: () {
-              if (provider.fakeTionsZoneRadius > 50) {
-                provider.setFakeTionsZoneRadius(provider.fakeTionsZoneRadius - 50);
-              }
-            },
-            onIncrease: () {
-              if (provider.fakeTionsZoneRadius < 500) {
-                provider.setFakeTionsZoneRadius(provider.fakeTionsZoneRadius + 50);
-              }
-            },
+          // Múltiples zones de fake tions
+          _buildFakeTionsZonesList(provider),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFakeTionsZonesList(HideTioProvider provider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Zones de generació (${provider.fakeTionsZones.length})',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 14,
+              ),
+            ),
+            GestureDetector(
+              onTap: () => _openAddZoneMapPicker(provider),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.purple.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.purple.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.add_location_alt,
+                      color: Colors.purple,
+                      size: 16,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'Afegir zona',
+                      style: TextStyle(
+                        color: Colors.purple,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        
+        if (provider.fakeTionsZones.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.purple.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Colors.purple.withValues(alpha: 0.2),
+                style: BorderStyle.solid,
+              ),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.location_off,
+                  color: Colors.purple.withValues(alpha: 0.5),
+                  size: 32,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'No hi ha zones configurades',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'S\'usarà la ubicació de l\'usuari',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          )
+        else
+          Column(
+            children: provider.fakeTionsZones.map((zone) {
+              return _buildZoneCard(zone, provider);
+            }).toList(),
           ),
-          const SizedBox(height: 12),
-          
-          // Botó per seleccionar zona al mapa
-          _buildZoneMapButton(provider),
-          
-          const SizedBox(height: 8),
-          Text(
-            provider.hasFakeTionsZoneCenter
-                ? 'Zona personalitzada configurada'
-                : 'Zona centrada a la ubicació de l\'usuari',
-            style: TextStyle(
-              fontSize: 11,
-              color: provider.hasFakeTionsZoneCenter 
-                  ? Colors.purple.withValues(alpha: 0.8)
-                  : Colors.white.withValues(alpha: 0.5),
-              fontStyle: provider.hasFakeTionsZoneCenter ? FontStyle.italic : FontStyle.normal,
+      ],
+    );
+  }
+
+  Widget _buildZoneCard(FakeTionsZone zone, HideTioProvider provider) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.purple.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.purple.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.purple.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.location_on,
+              color: Colors.purple,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${zone.lat.toStringAsFixed(4)}, ${zone.lng.toStringAsFixed(4)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Radi: ${zone.radius.toInt()}m',
+                  style: TextStyle(
+                    color: Colors.purple.withValues(alpha: 0.8),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () => _openEditZoneMapPicker(zone, provider),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.purple.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(
+                Icons.edit,
+                color: Colors.purple,
+                size: 16,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => _showDeleteZoneDialog(zone, provider),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(
+                Icons.delete_outline,
+                color: Colors.red,
+                size: 16,
+              ),
             ),
           ),
         ],
@@ -409,69 +565,17 @@ class _HideTioScreenState extends State<HideTioScreen> {
     );
   }
 
-  Widget _buildZoneMapButton(HideTioProvider provider) {
-    return GestureDetector(
-      onTap: () => _openZoneMapPicker(provider),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: provider.hasFakeTionsZoneCenter
-              ? Colors.purple.withValues(alpha: 0.3)
-              : Colors.purple.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: Colors.purple.withValues(alpha: 0.5),
-            width: 1,
-          ),
+  Future<void> _openAddZoneMapPicker(HideTioProvider provider) async {
+    // Obtenir la posició actual per centrar el mapa
+    final currentPos = await provider.getCurrentPosition();
+    if (currentPos == null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No s\'ha pogut obtenir la ubicació actual'),
+          backgroundColor: Colors.red,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              provider.hasFakeTionsZoneCenter ? Icons.edit_location_alt : Icons.map,
-              color: Colors.purple,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              provider.hasFakeTionsZoneCenter
-                  ? 'EDITAR ZONA AL MAPA'
-                  : 'SELECCIONAR ZONA AL MAPA',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.purple,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openZoneMapPicker(HideTioProvider provider) async {
-    // Utilitzar el centre configurat o la posició actual
-    double initialLat;
-    double initialLng;
-    
-    if (provider.hasFakeTionsZoneCenter) {
-      initialLat = provider.fakeTionsZoneCenter!.lat;
-      initialLng = provider.fakeTionsZoneCenter!.lng;
-    } else {
-      final currentPos = await provider.getCurrentPosition();
-      if (currentPos == null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No s\'ha pogut obtenir la ubicació actual'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-      initialLat = currentPos?.lat ?? _defaultLatitude;
-      initialLng = currentPos?.lng ?? _defaultLongitude;
+      );
+      return;
     }
 
     if (!mounted) return;
@@ -481,22 +585,90 @@ class _HideTioScreenState extends State<HideTioScreen> {
       MaterialPageRoute(
         builder: (context) => MapPickerScreen(
           mode: MapPickerMode.fakeTionsZone,
-          initialLat: initialLat,
-          initialLng: initialLng,
-          initialRadius: provider.fakeTionsZoneRadius,
+          initialLat: currentPos?.lat ?? _defaultLatitude,
+          initialLng: currentPos?.lng ?? _defaultLongitude,
+          initialRadius: 300.0,
         ),
       ),
     );
 
     if (result != null && mounted) {
-      await provider.setFakeTionsZone(result.lat, result.lng, result.radius ?? 300.0);
+      await provider.addFakeTionsZoneFromCoords(
+        result.lat,
+        result.lng,
+        result.radius ?? 300.0,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Zona de fake tions configurada!'),
+          content: Text('Zona de fake tions afegida!'),
           backgroundColor: Colors.purple,
         ),
       );
     }
+  }
+
+  Future<void> _openEditZoneMapPicker(FakeTionsZone zone, HideTioProvider provider) async {
+    if (!mounted) return;
+
+    final result = await Navigator.push<MapPickerResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapPickerScreen(
+          mode: MapPickerMode.fakeTionsZone,
+          initialLat: zone.lat,
+          initialLng: zone.lng,
+          initialRadius: zone.radius,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      final updatedZone = zone.copyWith(
+        lat: result.lat,
+        lng: result.lng,
+        radius: result.radius ?? zone.radius,
+      );
+      await provider.updateFakeTionsZone(updatedZone);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Zona de fake tions actualitzada!'),
+          backgroundColor: Colors.purple,
+        ),
+      );
+    }
+  }
+
+  void _showDeleteZoneDialog(FakeTionsZone zone, HideTioProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2A2A3E),
+        title: const Text(
+          'Eliminar zona?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Segur que vols eliminar aquesta zona de fake tions?\n\nUbicació: ${zone.lat.toStringAsFixed(4)}, ${zone.lng.toStringAsFixed(4)}\nRadi: ${zone.radius.toInt()}m',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel·lar'),
+          ),
+          TextButton(
+            onPressed: () {
+              provider.deleteFakeTionsZone(zone.id);
+              Navigator.pop(context);
+            },
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildSettingRow({

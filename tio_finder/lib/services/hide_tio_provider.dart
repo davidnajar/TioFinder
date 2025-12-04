@@ -17,6 +17,9 @@ class HideTioProvider extends ChangeNotifier {
   int? _fakeTionsCount;
   double _fakeTionsZoneRadius = 300.0;
   ({double lat, double lng})? _fakeTionsZoneCenter;
+  
+  // Múltiples zones de fake tions
+  List<FakeTionsZone> _fakeTionsZones = [];
 
   // Getters
   List<RadarTarget> get savedTios => _savedTios;
@@ -36,6 +39,12 @@ class HideTioProvider extends ChangeNotifier {
   
   /// Indica si s'ha configurat una zona personalitzada per als fake tions
   bool get hasFakeTionsZoneCenter => _fakeTionsZoneCenter != null;
+  
+  /// Llista de totes les zones de fake tions configurades
+  List<FakeTionsZone> get fakeTionsZones => _fakeTionsZones;
+  
+  /// Indica si hi ha zones de fake tions configurades
+  bool get hasFakeTionsZones => _fakeTionsZones.isNotEmpty;
 
   /// Inicialitza el provider
   Future<void> init() async {
@@ -49,6 +58,9 @@ class HideTioProvider extends ChangeNotifier {
     _fakeTionsCount = await _storageService.getFakeTionsCount();
     _fakeTionsZoneRadius = await _storageService.getFakeTionsZoneRadius();
     _fakeTionsZoneCenter = await _storageService.getFakeTionsZoneCenter();
+    
+    // Carregar múltiples zones de fake tions
+    _fakeTionsZones = await _storageService.getFakeTionsZones();
     
     await loadTios();
 
@@ -212,7 +224,52 @@ class HideTioProvider extends ChangeNotifier {
     _fakeTionsCount = null;
     _fakeTionsZoneRadius = 300.0;
     _fakeTionsZoneCenter = null;
+    _fakeTionsZones = [];
     await _storageService.resetFakeTionsSettings();
+    await _storageService.deleteAllFakeTionsZones();
+    notifyListeners();
+  }
+
+  // ============== Multiple Fake Tions Zones ==============
+
+  /// Afegeix una nova zona de fake tions
+  Future<void> addFakeTionsZone(FakeTionsZone zone) async {
+    _fakeTionsZones.add(zone);
+    await _storageService.addFakeTionsZone(zone);
+    notifyListeners();
+  }
+
+  /// Afegeix una zona de fake tions amb les coordenades i radi especificats
+  Future<void> addFakeTionsZoneFromCoords(double lat, double lng, double radius) async {
+    final zone = FakeTionsZone(
+      lat: lat,
+      lng: lng,
+      radius: radius,
+    );
+    await addFakeTionsZone(zone);
+  }
+
+  /// Elimina una zona de fake tions per ID
+  Future<void> deleteFakeTionsZone(String id) async {
+    _fakeTionsZones.removeWhere((z) => z.id == id);
+    await _storageService.deleteFakeTionsZone(id);
+    notifyListeners();
+  }
+
+  /// Actualitza una zona de fake tions existent
+  Future<void> updateFakeTionsZone(FakeTionsZone zone) async {
+    final index = _fakeTionsZones.indexWhere((z) => z.id == zone.id);
+    if (index != -1) {
+      _fakeTionsZones[index] = zone;
+      await _storageService.updateFakeTionsZone(zone);
+      notifyListeners();
+    }
+  }
+
+  /// Elimina totes les zones de fake tions
+  Future<void> deleteAllFakeTionsZones() async {
+    _fakeTionsZones = [];
+    await _storageService.deleteAllFakeTionsZones();
     notifyListeners();
   }
 
