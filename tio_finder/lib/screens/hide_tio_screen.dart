@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/services.dart';
 import '../models/models.dart';
+import 'map_picker_screen.dart';
 
 /// Pantalla per amagar tiós
 class HideTioScreen extends StatefulWidget {
@@ -134,58 +135,137 @@ class _HideTioScreenState extends State<HideTioScreen> {
   }
 
   Widget _buildHideButton(HideTioProvider provider) {
-    return GestureDetector(
-      onTap: provider.isLoading
-          ? null
-          : () async {
-              provider.clearMessages();
-              await provider.saveCurrentLocationAsTio();
-            },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.orange.withValues(alpha: 0.4),
-              Colors.orange.withValues(alpha: 0.2),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.orange.withValues(alpha: 0.6),
-            width: 2,
+    return Column(
+      children: [
+        // Botó principal per amagar a la ubicació actual
+        GestureDetector(
+          onTap: provider.isLoading
+              ? null
+              : () async {
+                  provider.clearMessages();
+                  await provider.saveCurrentLocationAsTio();
+                },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.orange.withValues(alpha: 0.4),
+                  Colors.orange.withValues(alpha: 0.2),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.orange.withValues(alpha: 0.6),
+                width: 2,
+              ),
+            ),
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.add_location_alt,
+                  size: 40,
+                  color: Colors.orange,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'AMAGAR TIÓ AQUÍ',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Guardar a la ubicació actual',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.add_location_alt,
-              size: 48,
-              color: Colors.orange,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'AMAGAR TIÓ AQUÍ',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
-                letterSpacing: 2,
+        const SizedBox(height: 12),
+        // Botó secundari per obrir el mapa
+        GestureDetector(
+          onTap: provider.isLoading ? null : () => _openMapPicker(provider),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.green.withValues(alpha: 0.3),
+                  Colors.green.withValues(alpha: 0.15),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.green.withValues(alpha: 0.5),
+                width: 2,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Prem per guardar la ubicació actual',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.6),
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.map,
+                  size: 24,
+                  color: Colors.green,
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'TRIAR AL MAPA',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openMapPicker(HideTioProvider provider) async {
+    // Obtenir la posició actual per centrar el mapa
+    final currentPos = await provider.getCurrentPosition();
+    if (currentPos == null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No s\'ha pogut obtenir la ubicació actual'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+
+    final result = await Navigator.push<MapPickerResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapPickerScreen(
+          mode: MapPickerMode.tioLocation,
+          initialLat: currentPos?.lat ?? 41.3851,
+          initialLng: currentPos?.lng ?? 2.1734,
         ),
       ),
     );
+
+    if (result != null && mounted) {
+      provider.clearMessages();
+      await provider.saveTioAtLocation(result.lat, result.lng);
+    }
   }
 
   Widget _buildMessage(String message, Color color) {
@@ -302,17 +382,117 @@ class _HideTioScreenState extends State<HideTioScreen> {
               }
             },
           ),
+          const SizedBox(height: 12),
+          
+          // Botó per seleccionar zona al mapa
+          _buildZoneMapButton(provider),
+          
           const SizedBox(height: 8),
           Text(
-            'Defineix la zona on apareixeran els fake tions',
+            provider.hasFakeTionsZoneCenter
+                ? 'Zona personalitzada configurada'
+                : 'Zona centrada a la ubicació de l\'usuari',
             style: TextStyle(
               fontSize: 11,
-              color: Colors.white.withValues(alpha: 0.5),
+              color: provider.hasFakeTionsZoneCenter 
+                  ? Colors.purple.withValues(alpha: 0.8)
+                  : Colors.white.withValues(alpha: 0.5),
+              fontStyle: provider.hasFakeTionsZoneCenter ? FontStyle.italic : FontStyle.normal,
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildZoneMapButton(HideTioProvider provider) {
+    return GestureDetector(
+      onTap: () => _openZoneMapPicker(provider),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: provider.hasFakeTionsZoneCenter
+              ? Colors.purple.withValues(alpha: 0.3)
+              : Colors.purple.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: Colors.purple.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              provider.hasFakeTionsZoneCenter ? Icons.edit_location_alt : Icons.map,
+              color: Colors.purple,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              provider.hasFakeTionsZoneCenter
+                  ? 'EDITAR ZONA AL MAPA'
+                  : 'SELECCIONAR ZONA AL MAPA',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.purple,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openZoneMapPicker(HideTioProvider provider) async {
+    // Utilitzar el centre configurat o la posició actual
+    double initialLat;
+    double initialLng;
+    
+    if (provider.hasFakeTionsZoneCenter) {
+      initialLat = provider.fakeTionsZoneCenter!.lat;
+      initialLng = provider.fakeTionsZoneCenter!.lng;
+    } else {
+      final currentPos = await provider.getCurrentPosition();
+      if (currentPos == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No s\'ha pogut obtenir la ubicació actual'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      initialLat = currentPos?.lat ?? 41.3851;
+      initialLng = currentPos?.lng ?? 2.1734;
+    }
+
+    if (!mounted) return;
+
+    final result = await Navigator.push<MapPickerResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapPickerScreen(
+          mode: MapPickerMode.fakeTionsZone,
+          initialLat: initialLat,
+          initialLng: initialLng,
+          initialRadius: provider.fakeTionsZoneRadius,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      await provider.setFakeTionsZone(result.lat, result.lng, result.radius ?? 300.0);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Zona de fake tions configurada!'),
+          backgroundColor: Colors.purple,
+        ),
+      );
+    }
   }
 
   Widget _buildSettingRow({

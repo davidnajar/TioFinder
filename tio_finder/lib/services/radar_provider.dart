@@ -112,11 +112,16 @@ class RadarProvider extends ChangeNotifier {
     // Carregar configuració de fake tions
     final fakeTionsCount = await _storageService.getFakeTionsCount();
     final fakeTionsRadius = await _storageService.getFakeTionsZoneRadius();
+    final fakeTionsZoneCenter = await _storageService.getFakeTionsZoneCenter();
+
+    // Determinar el centre per als fake tions (zona configurada o posició actual)
+    final fakeTionsCenterLat = fakeTionsZoneCenter?.lat ?? _currentPosition!.latitude;
+    final fakeTionsCenterLng = fakeTionsZoneCenter?.lng ?? _currentPosition!.longitude;
 
     // Generar targets falsos amb la configuració guardada
     final fakeTargets = _fakeGenerator.generateSpacedFakeTargets(
-      centerLat: _currentPosition!.latitude,
-      centerLng: _currentPosition!.longitude,
+      centerLat: fakeTionsCenterLat,
+      centerLng: fakeTionsCenterLng,
       maxRadius: fakeTionsRadius,
       count: fakeTionsCount,
     );

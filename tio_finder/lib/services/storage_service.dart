@@ -8,6 +8,8 @@ class StorageService {
   static const String _radarZoomKey = 'radar_zoom_level';
   static const String _fakeTionsCountKey = 'fake_tions_count';
   static const String _fakeTionsZoneRadiusKey = 'fake_tions_zone_radius';
+  static const String _fakeTionsZoneCenterLatKey = 'fake_tions_zone_center_lat';
+  static const String _fakeTionsZoneCenterLngKey = 'fake_tions_zone_center_lng';
   
   SharedPreferences? _prefs;
 
@@ -122,5 +124,25 @@ class StorageService {
     _prefs ??= await SharedPreferences.getInstance();
     await _prefs?.remove(_fakeTionsCountKey);
     await _prefs?.remove(_fakeTionsZoneRadiusKey);
+    await _prefs?.remove(_fakeTionsZoneCenterLatKey);
+    await _prefs?.remove(_fakeTionsZoneCenterLngKey);
+  }
+
+  /// Guarda el centre de la zona per als fake tions
+  Future<void> saveFakeTionsZoneCenter(double lat, double lng) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs?.setDouble(_fakeTionsZoneCenterLatKey, lat);
+    await _prefs?.setDouble(_fakeTionsZoneCenterLngKey, lng);
+  }
+
+  /// Obté el centre de la zona per als fake tions (null si no s'ha configurat)
+  Future<({double lat, double lng})?> getFakeTionsZoneCenter() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    final lat = _prefs?.getDouble(_fakeTionsZoneCenterLatKey);
+    final lng = _prefs?.getDouble(_fakeTionsZoneCenterLngKey);
+    if (lat != null && lng != null) {
+      return (lat: lat, lng: lng);
+    }
+    return null;
   }
 }
