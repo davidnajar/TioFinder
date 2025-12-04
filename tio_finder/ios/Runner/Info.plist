@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Tio Finder</string>
+	<string>Tió Finder</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Necessitem la teva ubicació per trobar els tiós amagats</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Necessitem la teva ubicació per trobar els tiós amagats</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Necessitem la teva ubicació per trobar els tiós amagats</string>
 </dict>
 </plist>

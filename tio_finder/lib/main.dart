@@ -1,19 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'screens/screens.dart';
+import 'services/services.dart';
 
 void main() {
-  runApp(const MainApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const TioFinderApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class TioFinderApp extends StatelessWidget {
+  const TioFinderApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => HideTioProvider()),
+        ChangeNotifierProvider(create: (_) => RadarProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Tió Finder',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.green,
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
         ),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const HomeScreen(),
+          '/hide': (context) => const HideTioScreen(),
+          '/radar': (context) => const RadarScreen(),
+        },
       ),
     );
   }
