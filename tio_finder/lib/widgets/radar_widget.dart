@@ -7,11 +7,13 @@ import 'radar_painter.dart';
 class RadarWidget extends StatefulWidget {
   final List<PolarTarget> targets;
   final double size;
+  final bool isFineSearchMode;
 
   const RadarWidget({
     super.key,
     required this.targets,
     this.size = 300,
+    this.isFineSearchMode = false,
   });
 
   @override
@@ -47,6 +49,7 @@ class _RadarWidgetState extends State<RadarWidget>
           painter: RadarPainter(
             sweepAngle: _controller.value * 2 * pi,
             targets: widget.targets,
+            isFineSearchMode: widget.isFineSearchMode,
           ),
         );
       },

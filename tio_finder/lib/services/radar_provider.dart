@@ -15,6 +15,7 @@ class RadarProvider extends ChangeNotifier {
 
   static const double maxRadarRadius = 300.0; // metres
   static const double foundThreshold = 8.0; // metres per considerar "trobat"
+  static const double fineSearchRadius = 50.0; // metres per activar fine search mode
 
   // Estat
   List<RadarTarget> _allTargets = [];
@@ -24,6 +25,10 @@ class RadarProvider extends ChangeNotifier {
   bool _isInitialized = false;
   bool _hasLocationPermission = false;
   String? _errorMessage;
+  
+  // Fine search mode
+  bool _isFineSearchMode = false;
+  RadarTarget? _pendingFoundTio;
 
   StreamSubscription<Position>? _positionSub;
   StreamSubscription<double>? _headingSub;
@@ -36,6 +41,11 @@ class RadarProvider extends ChangeNotifier {
   bool get hasLocationPermission => _hasLocationPermission;
   String? get errorMessage => _errorMessage;
   List<RadarTarget> get allTargets => _allTargets;
+  bool get isFineSearchMode => _isFineSearchMode;
+  RadarTarget? get pendingFoundTio => _pendingFoundTio;
+  
+  /// Retorna el radi efectiu del radar (més petit en fine search mode)
+  double get effectiveRadarRadius => _isFineSearchMode ? fineSearchRadius : maxRadarRadius;
 
   /// Inicialitza el provider
   Future<void> init() async {
@@ -102,7 +112,8 @@ class RadarProvider extends ChangeNotifier {
     if (_currentPosition == null) return;
 
     final toRemove = <String>[];
-    final foundRealTios = <RadarTarget>[];
+    RadarTarget? closestRealTio;
+    double closestRealTioDistance = double.infinity;
 
     for (final target in _allTargets) {
       if (target.found) continue;
@@ -114,20 +125,45 @@ class RadarProvider extends ChangeNotifier {
         target.lng,
       );
 
-      if (distance < foundThreshold) {
-        if (target.type == TargetType.realTio) {
-          foundRealTios.add(target);
-        } else if (target.type == TargetType.fakeVanish) {
-          toRemove.add(target.id);
-          _audioService.playPoofSound();
+      if (target.type == TargetType.realTio) {
+        // Buscar el tió real més proper
+        if (distance < closestRealTioDistance) {
+          closestRealTioDistance = distance;
+          closestRealTio = target;
         }
-        // fakePersistent no fa res quan t'hi acostes
+      } else if (target.type == TargetType.fakeVanish && distance < foundThreshold) {
+        // Els fake desapareixen quan t'acostes
+        toRemove.add(target.id);
+        _audioService.playPoofSound();
       }
+      // fakePersistent no fa res quan t'hi acostes
     }
 
-    // Processar tiós trobats
-    for (final tio in foundRealTios) {
-      _onRealTioFound(tio);
+    // Gestionar el mode fine search per tiós reals
+    if (closestRealTio != null && closestRealTioDistance < fineSearchRadius) {
+      // Activar fine search mode si hi ha un tió real a prop
+      if (!_isFineSearchMode) {
+        _isFineSearchMode = true;
+      }
+      
+      // Si estem prou a prop, marcar com a pendent de confirmació
+      if (closestRealTioDistance < foundThreshold) {
+        // Només actualitzar si és un tió diferent
+        if (_pendingFoundTio?.id != closestRealTio.id) {
+          _pendingFoundTio = closestRealTio;
+        }
+      } else {
+        // Si ens allunyem del llindar, però encara en fine search, netejar pending
+        if (_pendingFoundTio != null) {
+          _pendingFoundTio = null;
+        }
+      }
+    } else {
+      // Si no hi ha tiós reals a prop, desactivar fine search mode
+      if (_isFineSearchMode) {
+        _isFineSearchMode = false;
+        _pendingFoundTio = null;
+      }
     }
 
     // Eliminar fakeVanish
@@ -136,6 +172,22 @@ class RadarProvider extends ChangeNotifier {
 
   /// Callback que s'ha de configurar des de la UI per mostrar el diàleg
   void Function(RadarTarget tio)? onTioFoundCallback;
+
+  /// Confirma que s'ha trobat el tió pendent (cridat quan l'usuari prem el botó)
+  /// Retorna true si s'ha confirmat correctament, false si no hi havia tió pendent
+  bool confirmFoundTio() {
+    if (_pendingFoundTio == null) return false;
+    
+    final tio = _pendingFoundTio!;
+    _onRealTioFound(tio);
+    
+    // Resetejar fine search mode
+    _pendingFoundTio = null;
+    _isFineSearchMode = false;
+    
+    notifyListeners();
+    return true;
+  }
 
   void _onRealTioFound(RadarTarget tio) {
     // Marcar com trobat
@@ -159,6 +211,7 @@ class RadarProvider extends ChangeNotifier {
     if (_currentPosition == null) return;
 
     final headingRad = _currentHeading * pi / 180;
+    final currentRadius = effectiveRadarRadius;
     
     _polarTargets = _allTargets.map((target) {
       final distance = GeoUtils.calculateDistance(
@@ -181,8 +234,8 @@ class RadarProvider extends ChangeNotifier {
       while (relativeAngle > pi) relativeAngle -= 2 * pi;
       while (relativeAngle < -pi) relativeAngle += 2 * pi;
 
-      // Factor de distància (0 a 1, limitat al radi màxim)
-      final factor = (distance / maxRadarRadius).clamp(0.0, 1.0);
+      // Factor de distància (0 a 1, limitat al radi efectiu actual)
+      final factor = (distance / currentRadius).clamp(0.0, 1.0);
 
       return PolarTarget(
         id: target.id,
