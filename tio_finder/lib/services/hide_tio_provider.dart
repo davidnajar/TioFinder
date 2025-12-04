@@ -13,12 +13,22 @@ class HideTioProvider extends ChangeNotifier {
   String? _errorMessage;
   String? _successMessage;
 
+  // Configuració de fake tions
+  int? _fakeTionsCount;
+  double _fakeTionsZoneRadius = 300.0;
+
   // Getters
   List<RadarTarget> get savedTios => _savedTios;
   bool get isLoading => _isLoading;
   bool get hasLocationPermission => _hasLocationPermission;
   String? get errorMessage => _errorMessage;
   String? get successMessage => _successMessage;
+  
+  /// Nombre de fake tions a generar (null = aleatori entre 8 i 15)
+  int? get fakeTionsCount => _fakeTionsCount;
+  
+  /// Radi de la zona per als fake tions (en metres)
+  double get fakeTionsZoneRadius => _fakeTionsZoneRadius;
 
   /// Inicialitza el provider
   Future<void> init() async {
@@ -27,6 +37,10 @@ class HideTioProvider extends ChangeNotifier {
 
     await _storageService.init();
     _hasLocationPermission = await _locationService.checkAndRequestPermission();
+    
+    // Carregar configuració de fake tions
+    _fakeTionsCount = await _storageService.getFakeTionsCount();
+    _fakeTionsZoneRadius = await _storageService.getFakeTionsZoneRadius();
     
     await loadTios();
 
@@ -104,6 +118,37 @@ class HideTioProvider extends ChangeNotifier {
   void clearMessages() {
     _errorMessage = null;
     _successMessage = null;
+    notifyListeners();
+  }
+
+  // ============== Fake Tions Settings ==============
+
+  /// Estableix el nombre de fake tions a generar
+  /// Si count és null, es generarà un nombre aleatori
+  Future<void> setFakeTionsCount(int? count) async {
+    _fakeTionsCount = count;
+    if (count != null) {
+      await _storageService.saveFakeTionsCount(count);
+    } else {
+      // Esborrar la configuració per tornar a aleatori
+      await _storageService.resetFakeTionsSettings();
+      _fakeTionsZoneRadius = 300.0;
+    }
+    notifyListeners();
+  }
+
+  /// Estableix el radi de la zona per als fake tions (en metres)
+  Future<void> setFakeTionsZoneRadius(double radius) async {
+    _fakeTionsZoneRadius = radius;
+    await _storageService.saveFakeTionsZoneRadius(radius);
+    notifyListeners();
+  }
+
+  /// Reseteja les configuracions de fake tions als valors per defecte
+  Future<void> resetFakeTionsSettings() async {
+    _fakeTionsCount = null;
+    _fakeTionsZoneRadius = 300.0;
+    await _storageService.resetFakeTionsSettings();
     notifyListeners();
   }
 

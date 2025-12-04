@@ -5,6 +5,9 @@ import '../models/models.dart';
 /// Servei per gestionar l'emmagatzematge persistent dels tiós
 class StorageService {
   static const String _tiosKey = 'saved_tios';
+  static const String _radarZoomKey = 'radar_zoom_level';
+  static const String _fakeTionsCountKey = 'fake_tions_count';
+  static const String _fakeTionsZoneRadiusKey = 'fake_tions_zone_radius';
   
   SharedPreferences? _prefs;
 
@@ -72,5 +75,52 @@ class StorageService {
     _prefs ??= await SharedPreferences.getInstance();
     final jsonList = tios.map((t) => t.toJson()).toList();
     await _prefs?.setString(_tiosKey, json.encode(jsonList));
+  }
+
+  // ============== Radar Zoom Settings ==============
+
+  /// Guarda el nivell de zoom del radar (índex del nivell)
+  Future<void> saveRadarZoomLevel(int zoomLevelIndex) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs?.setInt(_radarZoomKey, zoomLevelIndex);
+  }
+
+  /// Obté el nivell de zoom del radar (índex del nivell, per defecte 0)
+  Future<int> getRadarZoomLevel() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs?.getInt(_radarZoomKey) ?? 0;
+  }
+
+  // ============== Fake Tions Settings ==============
+
+  /// Guarda el nombre de fake tions a generar
+  Future<void> saveFakeTionsCount(int count) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs?.setInt(_fakeTionsCountKey, count);
+  }
+
+  /// Obté el nombre de fake tions a generar (per defecte null = aleatori)
+  Future<int?> getFakeTionsCount() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs?.getInt(_fakeTionsCountKey);
+  }
+
+  /// Guarda el radi de la zona per als fake tions (en metres)
+  Future<void> saveFakeTionsZoneRadius(double radius) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs?.setDouble(_fakeTionsZoneRadiusKey, radius);
+  }
+
+  /// Obté el radi de la zona per als fake tions (per defecte 300m)
+  Future<double> getFakeTionsZoneRadius() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs?.getDouble(_fakeTionsZoneRadiusKey) ?? 300.0;
+  }
+
+  /// Reseteja les configuracions de fake tions als valors per defecte
+  Future<void> resetFakeTionsSettings() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs?.remove(_fakeTionsCountKey);
+    await _prefs?.remove(_fakeTionsZoneRadiusKey);
   }
 }

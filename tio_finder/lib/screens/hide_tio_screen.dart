@@ -66,6 +66,12 @@ class _HideTioScreenState extends State<HideTioScreen> {
                 child: _buildHideButton(provider),
               ),
               
+              // Configuració de Fake Tions
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: _buildFakeTionsSettings(provider),
+              ),
+              
               // Missatges
               if (provider.errorMessage != null)
                 _buildMessage(provider.errorMessage!, Colors.red),
@@ -205,6 +211,168 @@ class _HideTioScreenState extends State<HideTioScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFakeTionsSettings(HideTioProvider provider) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.purple.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.settings,
+                color: Colors.purple,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Configuració Fake Tions',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.purple,
+                ),
+              ),
+              const Spacer(),
+              // Botó per resetejar
+              GestureDetector(
+                onTap: () => provider.resetFakeTionsSettings(),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Reset',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Nombre de fake tions
+          _buildSettingRow(
+            label: 'Quantitat',
+            value: provider.fakeTionsCount?.toString() ?? 'Aleatori (8-15)',
+            onDecrease: () {
+              final current = provider.fakeTionsCount ?? 10;
+              if (current > 0) {
+                provider.setFakeTionsCount(current - 1);
+              }
+            },
+            onIncrease: () {
+              final current = provider.fakeTionsCount ?? 10;
+              if (current < 30) {
+                provider.setFakeTionsCount(current + 1);
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          
+          // Radi de la zona
+          _buildSettingRow(
+            label: 'Zona (m)',
+            value: '${provider.fakeTionsZoneRadius.toInt()}',
+            onDecrease: () {
+              if (provider.fakeTionsZoneRadius > 50) {
+                provider.setFakeTionsZoneRadius(provider.fakeTionsZoneRadius - 50);
+              }
+            },
+            onIncrease: () {
+              if (provider.fakeTionsZoneRadius < 500) {
+                provider.setFakeTionsZoneRadius(provider.fakeTionsZoneRadius + 50);
+              }
+            },
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Defineix la zona on apareixeran els fake tions',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.white.withValues(alpha: 0.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingRow({
+    required String label,
+    required String value,
+    required VoidCallback onDecrease,
+    required VoidCallback onIncrease,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.7),
+            fontSize: 14,
+          ),
+        ),
+        Row(
+          children: [
+            _buildControlButton(Icons.remove, onDecrease),
+            Container(
+              width: 80,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.purple.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                value,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            _buildControlButton(Icons.add, onIncrease),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildControlButton(IconData icon, VoidCallback onPressed) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.purple.withValues(alpha: 0.3),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          icon,
+          color: Colors.purple,
+          size: 18,
+        ),
       ),
     );
   }

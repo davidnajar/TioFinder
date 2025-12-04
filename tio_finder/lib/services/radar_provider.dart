@@ -6,6 +6,19 @@ import '../models/models.dart';
 import '../services/services.dart';
 import '../utils/utils.dart';
 
+/// Nivells de zoom disponibles per al radar (estil Dragon Ball)
+class RadarZoomLevel {
+  final String name;
+  final double radiusMeters;
+  final double multiplier;
+
+  const RadarZoomLevel({
+    required this.name,
+    required this.radiusMeters,
+    required this.multiplier,
+  });
+}
+
 /// Provider per gestionar l'estat del radar
 class RadarProvider extends ChangeNotifier {
   final LocationService _locationService = LocationService();
@@ -13,9 +26,17 @@ class RadarProvider extends ChangeNotifier {
   final FakeTargetGenerator _fakeGenerator = FakeTargetGenerator();
   final AudioVibrateService _audioService = AudioVibrateService();
 
-  static const double maxRadarRadius = 300.0; // metres
+  static const double baseRadarRadius = 300.0; // metres (radi base)
   static const double foundThreshold = 8.0; // metres per considerar "trobat"
-  static const double fineSearchRadius = 50.0; // metres per activar fine search mode
+
+  /// Nivells de zoom disponibles (estil Dragon Ball)
+  static const List<RadarZoomLevel> zoomLevels = [
+    RadarZoomLevel(name: 'x1', radiusMeters: 300.0, multiplier: 1.0),
+    RadarZoomLevel(name: 'x1.5', radiusMeters: 200.0, multiplier: 1.5),
+    RadarZoomLevel(name: 'x2', radiusMeters: 150.0, multiplier: 2.0),
+    RadarZoomLevel(name: 'x4', radiusMeters: 75.0, multiplier: 4.0),
+    RadarZoomLevel(name: 'x6', radiusMeters: 50.0, multiplier: 6.0),
+  ];
 
   // Estat
   List<RadarTarget> _allTargets = [];
@@ -26,8 +47,8 @@ class RadarProvider extends ChangeNotifier {
   bool _hasLocationPermission = false;
   String? _errorMessage;
   
-  // Fine search mode
-  bool _isFineSearchMode = false;
+  // Zoom configurable
+  int _currentZoomLevelIndex = 0;
   RadarTarget? _pendingFoundTio;
 
   StreamSubscription<Position>? _positionSub;
@@ -41,16 +62,31 @@ class RadarProvider extends ChangeNotifier {
   bool get hasLocationPermission => _hasLocationPermission;
   String? get errorMessage => _errorMessage;
   List<RadarTarget> get allTargets => _allTargets;
-  bool get isFineSearchMode => _isFineSearchMode;
   RadarTarget? get pendingFoundTio => _pendingFoundTio;
   
-  /// Retorna el radi efectiu del radar (més petit en fine search mode)
-  double get effectiveRadarRadius => _isFineSearchMode ? fineSearchRadius : maxRadarRadius;
+  /// Índex del nivell de zoom actual
+  int get currentZoomLevelIndex => _currentZoomLevelIndex;
+  
+  /// Nivell de zoom actual
+  RadarZoomLevel get currentZoomLevel => zoomLevels[_currentZoomLevelIndex];
+  
+  /// Retorna el radi efectiu del radar segons el zoom actual
+  double get effectiveRadarRadius => currentZoomLevel.radiusMeters;
+  
+  /// Indica si estem en un zoom alt (per a efectes visuals)
+  bool get isHighZoom => _currentZoomLevelIndex >= 3; // x4 o superior
 
   /// Inicialitza el provider
   Future<void> init() async {
     await _storageService.init();
     await _audioService.init();
+    
+    // Carregar nivell de zoom guardat
+    _currentZoomLevelIndex = await _storageService.getRadarZoomLevel();
+    // Assegurar que l'índex és vàlid
+    if (_currentZoomLevelIndex >= zoomLevels.length) {
+      _currentZoomLevelIndex = 0;
+    }
     
     _hasLocationPermission = await _locationService.checkAndRequestPermission();
     
@@ -73,10 +109,16 @@ class RadarProvider extends ChangeNotifier {
     final realTios = await _storageService.getUnfoundTios();
     _allTargets = List.from(realTios);
 
-    // Generar targets falsos
+    // Carregar configuració de fake tions
+    final fakeTionsCount = await _storageService.getFakeTionsCount();
+    final fakeTionsRadius = await _storageService.getFakeTionsZoneRadius();
+
+    // Generar targets falsos amb la configuració guardada
     final fakeTargets = _fakeGenerator.generateSpacedFakeTargets(
       centerLat: _currentPosition!.latitude,
       centerLng: _currentPosition!.longitude,
+      maxRadius: fakeTionsRadius,
+      count: fakeTionsCount,
     );
     _allTargets.addAll(fakeTargets);
 
@@ -139,29 +181,15 @@ class RadarProvider extends ChangeNotifier {
       // fakePersistent no fa res quan t'hi acostes
     }
 
-    // Gestionar el mode fine search per tiós reals
-    if (closestRealTio != null && closestRealTioDistance < fineSearchRadius) {
-      // Activar fine search mode si hi ha un tió real a prop
-      if (!_isFineSearchMode) {
-        _isFineSearchMode = true;
-      }
-      
-      // Si estem prou a prop, marcar com a pendent de confirmació
-      if (closestRealTioDistance < foundThreshold) {
-        // Només actualitzar si és un tió diferent
-        if (_pendingFoundTio?.id != closestRealTio.id) {
-          _pendingFoundTio = closestRealTio;
-        }
-      } else {
-        // Si ens allunyem del llindar, però encara en fine search, netejar pending
-        if (_pendingFoundTio != null) {
-          _pendingFoundTio = null;
-        }
+    // Gestionar el tió real pendent de confirmació
+    if (closestRealTio != null && closestRealTioDistance < foundThreshold) {
+      // Només actualitzar si és un tió diferent
+      if (_pendingFoundTio?.id != closestRealTio.id) {
+        _pendingFoundTio = closestRealTio;
       }
     } else {
-      // Si no hi ha tiós reals a prop, desactivar fine search mode
-      if (_isFineSearchMode) {
-        _isFineSearchMode = false;
+      // Si ens allunyem del llindar, netejar pending
+      if (_pendingFoundTio != null) {
         _pendingFoundTio = null;
       }
     }
@@ -181,9 +209,8 @@ class RadarProvider extends ChangeNotifier {
     final tio = _pendingFoundTio!;
     _onRealTioFound(tio);
     
-    // Resetejar fine search mode
+    // Resetejar pending
     _pendingFoundTio = null;
-    _isFineSearchMode = false;
     
     notifyListeners();
     return true;
@@ -245,6 +272,33 @@ class RadarProvider extends ChangeNotifier {
         found: target.found,
       );
     }).toList();
+  }
+
+  // ============== Zoom Control Methods ==============
+
+  /// Canvia al nivell de zoom següent (cíclic)
+  void nextZoomLevel() {
+    _currentZoomLevelIndex = (_currentZoomLevelIndex + 1) % zoomLevels.length;
+    _storageService.saveRadarZoomLevel(_currentZoomLevelIndex);
+    _updatePolarTargets();
+    notifyListeners();
+  }
+
+  /// Canvia al nivell de zoom anterior (cíclic)
+  void previousZoomLevel() {
+    _currentZoomLevelIndex = (_currentZoomLevelIndex - 1 + zoomLevels.length) % zoomLevels.length;
+    _storageService.saveRadarZoomLevel(_currentZoomLevelIndex);
+    _updatePolarTargets();
+    notifyListeners();
+  }
+
+  /// Estableix un nivell de zoom específic
+  void setZoomLevel(int index) {
+    if (index < 0 || index >= zoomLevels.length) return;
+    _currentZoomLevelIndex = index;
+    _storageService.saveRadarZoomLevel(_currentZoomLevelIndex);
+    _updatePolarTargets();
+    notifyListeners();
   }
 
   /// Neteja i allibera recursos
