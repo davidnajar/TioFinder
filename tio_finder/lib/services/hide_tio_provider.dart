@@ -129,10 +129,6 @@ class HideTioProvider extends ChangeNotifier {
     _fakeTionsCount = count;
     if (count != null) {
       await _storageService.saveFakeTionsCount(count);
-    } else {
-      // Esborrar la configuració per tornar a aleatori
-      await _storageService.resetFakeTionsSettings();
-      _fakeTionsZoneRadius = 300.0;
     }
     notifyListeners();
   }
