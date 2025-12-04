@@ -3,6 +3,9 @@ import 'dart:math';
 /// Utilitats per a càlculs geogràfics
 class GeoUtils {
   static const double _earthRadius = 6371000; // Radi de la Terra en metres
+  
+  /// Metres per grau de latitud (aproximadament constant)
+  static const double _metersPerDegreeLat = 111320;
 
   /// Calcula la distància entre dos punts en metres usant la fórmula de Haversine
   static double calculateDistance(
@@ -64,9 +67,11 @@ class GeoUtils {
     final angle = random.nextDouble() * 2 * pi;
     
     // Convertir a desplaçament en graus
-    final dLat = (distance * cos(angle)) / 111320;
+    // _metersPerDegreeLat és una constant que representa metres per grau de latitud
+    final dLat = (distance * cos(angle)) / _metersPerDegreeLat;
+    // La longitud varia segons la latitud (més estreta als pols)
     final dLng = (distance * sin(angle)) / 
-        (111320 * cos(_toRadians(centerLat)));
+        (_metersPerDegreeLat * cos(_toRadians(centerLat)));
     
     return (lat: centerLat + dLat, lng: centerLng + dLng);
   }
