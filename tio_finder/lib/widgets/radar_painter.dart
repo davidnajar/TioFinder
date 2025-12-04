@@ -7,13 +7,13 @@ class RadarPainter extends CustomPainter {
   final double sweepAngle; // Angle actual del sweep (0-2π)
   final List<PolarTarget> targets;
   final double maxRadius;
-  final bool isFineSearchMode;
+  final bool isHighZoom;
 
   RadarPainter({
     required this.sweepAngle,
     required this.targets,
     this.maxRadius = 300.0,
-    this.isFineSearchMode = false,
+    this.isHighZoom = false,
   });
 
   @override
@@ -47,13 +47,13 @@ class RadarPainter extends CustomPainter {
     
     canvas.drawCircle(center, radius, paint);
     
-    // Vora del radar (més brillant en fine search mode)
+    // Vora del radar (més brillant en high zoom mode)
     final borderPaint = Paint()
-      ..color = isFineSearchMode 
+      ..color = isHighZoom 
           ? Colors.greenAccent.withValues(alpha: 0.8)
           : Colors.green.withValues(alpha: 0.5)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = isFineSearchMode ? 3 : 2;
+      ..strokeWidth = isHighZoom ? 3 : 2;
     
     canvas.drawCircle(center, radius, borderPaint);
   }
@@ -207,6 +207,6 @@ class RadarPainter extends CustomPainter {
   bool shouldRepaint(RadarPainter oldDelegate) {
     return oldDelegate.sweepAngle != sweepAngle ||
         oldDelegate.targets != targets ||
-        oldDelegate.isFineSearchMode != isFineSearchMode;
+        oldDelegate.isHighZoom != isHighZoom;
   }
 }

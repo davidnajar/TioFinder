@@ -122,17 +122,17 @@ class _RadarScreenState extends State<RadarScreen> {
                   children: [
                     // Info superior
                     _buildInfoBar(provider),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 16),
                     
-                    // Indicador de fine search mode
-                    if (provider.isFineSearchMode)
-                      _buildFineSearchIndicator(provider),
+                    // Zoom controls (estil Dragon Ball)
+                    _buildZoomControls(provider),
+                    const SizedBox(height: 16),
                     
                     // Radar
                     RadarWidget(
                       targets: provider.polarTargets,
                       size: MediaQuery.of(context).size.width - 48,
-                      isFineSearchMode: provider.isFineSearchMode,
+                      isHighZoom: provider.isHighZoom,
                     ),
                     const SizedBox(height: 32),
                     
@@ -157,28 +157,113 @@ class _RadarScreenState extends State<RadarScreen> {
     );
   }
 
-  Widget _buildFineSearchIndicator(RadarProvider provider) {
+  Widget _buildZoomControls(RadarProvider provider) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.greenAccent.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.greenAccent, width: 1),
+        color: Colors.orange.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(
+          color: Colors.orange.withValues(alpha: 0.4),
+          width: 2,
+        ),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Icon(Icons.zoom_in, color: Colors.greenAccent, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            'Mode cerca fina (${provider.effectiveRadarRadius.toStringAsFixed(0)}m)',
-            style: const TextStyle(
-              color: Colors.greenAccent,
-              fontWeight: FontWeight.bold,
+          // Botó menys zoom (-)
+          _buildZoomButton(
+            icon: Icons.remove,
+            onPressed: provider.previousZoomLevel,
+          ),
+          
+          // Selector de nivells de zoom (estil Dragon Ball)
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  RadarProvider.zoomLevels.length,
+                  (index) => _buildZoomLevelButton(
+                    provider,
+                    index,
+                    RadarProvider.zoomLevels[index],
+                  ),
+                ),
+              ),
             ),
           ),
+          
+          // Botó més zoom (+)
+          _buildZoomButton(
+            icon: Icons.add,
+            onPressed: provider.nextZoomLevel,
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildZoomButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: Colors.orange.withValues(alpha: 0.3),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.orange,
+            width: 2,
+          ),
+        ),
+        child: Icon(
+          icon,
+          color: Colors.orange,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildZoomLevelButton(
+    RadarProvider provider,
+    int index,
+    RadarZoomLevel level,
+  ) {
+    final isSelected = provider.currentZoomLevelIndex == index;
+    
+    return GestureDetector(
+      onTap: () => provider.setZoomLevel(index),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? Colors.orange 
+              : Colors.orange.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: isSelected 
+                ? Colors.orange 
+                : Colors.orange.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+        ),
+        child: Text(
+          level.name,
+          style: TextStyle(
+            color: isSelected ? Colors.black : Colors.orange,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+        ),
       ),
     );
   }

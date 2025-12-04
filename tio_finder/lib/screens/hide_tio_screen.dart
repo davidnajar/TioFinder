@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/services.dart';
 import '../models/models.dart';
+import 'map_picker_screen.dart';
+
+/// Coordenades per defecte (Barcelona) si no es pot obtenir la ubicació
+const double _defaultLatitude = 41.3851;
+const double _defaultLongitude = 2.1734;
 
 /// Pantalla per amagar tiós
 class HideTioScreen extends StatefulWidget {
@@ -66,6 +71,12 @@ class _HideTioScreenState extends State<HideTioScreen> {
                 child: _buildHideButton(provider),
               ),
               
+              // Configuració de Fake Tions
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: _buildFakeTionsSettings(provider),
+              ),
+              
               // Missatges
               if (provider.errorMessage != null)
                 _buildMessage(provider.errorMessage!, Colors.red),
@@ -128,58 +139,137 @@ class _HideTioScreenState extends State<HideTioScreen> {
   }
 
   Widget _buildHideButton(HideTioProvider provider) {
-    return GestureDetector(
-      onTap: provider.isLoading
-          ? null
-          : () async {
-              provider.clearMessages();
-              await provider.saveCurrentLocationAsTio();
-            },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.orange.withValues(alpha: 0.4),
-              Colors.orange.withValues(alpha: 0.2),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.orange.withValues(alpha: 0.6),
-            width: 2,
+    return Column(
+      children: [
+        // Botó principal per amagar a la ubicació actual
+        GestureDetector(
+          onTap: provider.isLoading
+              ? null
+              : () async {
+                  provider.clearMessages();
+                  await provider.saveCurrentLocationAsTio();
+                },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.orange.withValues(alpha: 0.4),
+                  Colors.orange.withValues(alpha: 0.2),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.orange.withValues(alpha: 0.6),
+                width: 2,
+              ),
+            ),
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.add_location_alt,
+                  size: 40,
+                  color: Colors.orange,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'AMAGAR TIÓ AQUÍ',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Guardar a la ubicació actual',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.add_location_alt,
-              size: 48,
-              color: Colors.orange,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'AMAGAR TIÓ AQUÍ',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.orange,
-                letterSpacing: 2,
+        const SizedBox(height: 12),
+        // Botó secundari per obrir el mapa
+        GestureDetector(
+          onTap: provider.isLoading ? null : () => _openMapPicker(provider),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.green.withValues(alpha: 0.3),
+                  Colors.green.withValues(alpha: 0.15),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.green.withValues(alpha: 0.5),
+                width: 2,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Prem per guardar la ubicació actual',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.6),
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.map,
+                  size: 24,
+                  color: Colors.green,
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'TRIAR AL MAPA',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openMapPicker(HideTioProvider provider) async {
+    // Obtenir la posició actual per centrar el mapa
+    final currentPos = await provider.getCurrentPosition();
+    if (currentPos == null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No s\'ha pogut obtenir la ubicació actual'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+
+    final result = await Navigator.push<MapPickerResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapPickerScreen(
+          mode: MapPickerMode.tioLocation,
+          initialLat: currentPos?.lat ?? _defaultLatitude,
+          initialLng: currentPos?.lng ?? _defaultLongitude,
         ),
       ),
     );
+
+    if (result != null && mounted) {
+      provider.clearMessages();
+      await provider.saveTioAtLocation(result.lat, result.lng);
+    }
   }
 
   Widget _buildMessage(String message, Color color) {
@@ -205,6 +295,268 @@ class _HideTioScreenState extends State<HideTioScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFakeTionsSettings(HideTioProvider provider) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.purple.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.settings,
+                color: Colors.purple,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Configuració Fake Tions',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.purple,
+                ),
+              ),
+              const Spacer(),
+              // Botó per resetejar
+              GestureDetector(
+                onTap: () => provider.resetFakeTionsSettings(),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Reset',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Nombre de fake tions
+          _buildSettingRow(
+            label: 'Quantitat',
+            value: provider.fakeTionsCount?.toString() ?? 'Aleatori (8-15)',
+            onDecrease: () {
+              final current = provider.fakeTionsCount ?? 10;
+              if (current > 0) {
+                provider.setFakeTionsCount(current - 1);
+              }
+            },
+            onIncrease: () {
+              final current = provider.fakeTionsCount ?? 10;
+              if (current < 30) {
+                provider.setFakeTionsCount(current + 1);
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          
+          // Radi de la zona
+          _buildSettingRow(
+            label: 'Zona (m)',
+            value: '${provider.fakeTionsZoneRadius.toInt()}',
+            onDecrease: () {
+              if (provider.fakeTionsZoneRadius > 50) {
+                provider.setFakeTionsZoneRadius(provider.fakeTionsZoneRadius - 50);
+              }
+            },
+            onIncrease: () {
+              if (provider.fakeTionsZoneRadius < 500) {
+                provider.setFakeTionsZoneRadius(provider.fakeTionsZoneRadius + 50);
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          
+          // Botó per seleccionar zona al mapa
+          _buildZoneMapButton(provider),
+          
+          const SizedBox(height: 8),
+          Text(
+            provider.hasFakeTionsZoneCenter
+                ? 'Zona personalitzada configurada'
+                : 'Zona centrada a la ubicació de l\'usuari',
+            style: TextStyle(
+              fontSize: 11,
+              color: provider.hasFakeTionsZoneCenter 
+                  ? Colors.purple.withValues(alpha: 0.8)
+                  : Colors.white.withValues(alpha: 0.5),
+              fontStyle: provider.hasFakeTionsZoneCenter ? FontStyle.italic : FontStyle.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildZoneMapButton(HideTioProvider provider) {
+    return GestureDetector(
+      onTap: () => _openZoneMapPicker(provider),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: provider.hasFakeTionsZoneCenter
+              ? Colors.purple.withValues(alpha: 0.3)
+              : Colors.purple.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: Colors.purple.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              provider.hasFakeTionsZoneCenter ? Icons.edit_location_alt : Icons.map,
+              color: Colors.purple,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              provider.hasFakeTionsZoneCenter
+                  ? 'EDITAR ZONA AL MAPA'
+                  : 'SELECCIONAR ZONA AL MAPA',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.purple,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openZoneMapPicker(HideTioProvider provider) async {
+    // Utilitzar el centre configurat o la posició actual
+    double initialLat;
+    double initialLng;
+    
+    if (provider.hasFakeTionsZoneCenter) {
+      initialLat = provider.fakeTionsZoneCenter!.lat;
+      initialLng = provider.fakeTionsZoneCenter!.lng;
+    } else {
+      final currentPos = await provider.getCurrentPosition();
+      if (currentPos == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No s\'ha pogut obtenir la ubicació actual'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      initialLat = currentPos?.lat ?? _defaultLatitude;
+      initialLng = currentPos?.lng ?? _defaultLongitude;
+    }
+
+    if (!mounted) return;
+
+    final result = await Navigator.push<MapPickerResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapPickerScreen(
+          mode: MapPickerMode.fakeTionsZone,
+          initialLat: initialLat,
+          initialLng: initialLng,
+          initialRadius: provider.fakeTionsZoneRadius,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      await provider.setFakeTionsZone(result.lat, result.lng, result.radius ?? 300.0);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Zona de fake tions configurada!'),
+          backgroundColor: Colors.purple,
+        ),
+      );
+    }
+  }
+
+  Widget _buildSettingRow({
+    required String label,
+    required String value,
+    required VoidCallback onDecrease,
+    required VoidCallback onIncrease,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.7),
+            fontSize: 14,
+          ),
+        ),
+        Row(
+          children: [
+            _buildControlButton(Icons.remove, onDecrease),
+            Container(
+              width: 80,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.purple.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                value,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            _buildControlButton(Icons.add, onIncrease),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildControlButton(IconData icon, VoidCallback onPressed) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.purple.withValues(alpha: 0.3),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          icon,
+          color: Colors.purple,
+          size: 18,
+        ),
       ),
     );
   }

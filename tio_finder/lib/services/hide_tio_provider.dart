@@ -13,12 +13,29 @@ class HideTioProvider extends ChangeNotifier {
   String? _errorMessage;
   String? _successMessage;
 
+  // Configuració de fake tions
+  int? _fakeTionsCount;
+  double _fakeTionsZoneRadius = 300.0;
+  ({double lat, double lng})? _fakeTionsZoneCenter;
+
   // Getters
   List<RadarTarget> get savedTios => _savedTios;
   bool get isLoading => _isLoading;
   bool get hasLocationPermission => _hasLocationPermission;
   String? get errorMessage => _errorMessage;
   String? get successMessage => _successMessage;
+  
+  /// Nombre de fake tions a generar (null = aleatori entre 8 i 15)
+  int? get fakeTionsCount => _fakeTionsCount;
+  
+  /// Radi de la zona per als fake tions (en metres)
+  double get fakeTionsZoneRadius => _fakeTionsZoneRadius;
+  
+  /// Centre de la zona per als fake tions (null = usar posició actual de l'usuari)
+  ({double lat, double lng})? get fakeTionsZoneCenter => _fakeTionsZoneCenter;
+  
+  /// Indica si s'ha configurat una zona personalitzada per als fake tions
+  bool get hasFakeTionsZoneCenter => _fakeTionsZoneCenter != null;
 
   /// Inicialitza el provider
   Future<void> init() async {
@@ -27,6 +44,11 @@ class HideTioProvider extends ChangeNotifier {
 
     await _storageService.init();
     _hasLocationPermission = await _locationService.checkAndRequestPermission();
+    
+    // Carregar configuració de fake tions
+    _fakeTionsCount = await _storageService.getFakeTionsCount();
+    _fakeTionsZoneRadius = await _storageService.getFakeTionsZoneRadius();
+    _fakeTionsZoneCenter = await _storageService.getFakeTionsZoneCenter();
     
     await loadTios();
 
@@ -38,6 +60,19 @@ class HideTioProvider extends ChangeNotifier {
   Future<void> loadTios() async {
     _savedTios = await _storageService.getAllTios();
     notifyListeners();
+  }
+
+  /// Obté la posició actual de l'usuari
+  Future<({double lat, double lng})?> getCurrentPosition() async {
+    if (!_hasLocationPermission) {
+      _hasLocationPermission = await _locationService.checkAndRequestPermission();
+      if (!_hasLocationPermission) {
+        return null;
+      }
+    }
+    final position = await _locationService.getCurrentPosition();
+    if (position == null) return null;
+    return (lat: position.latitude, lng: position.longitude);
   }
 
   /// Guarda un nou tió a la posició actual
@@ -88,6 +123,36 @@ class HideTioProvider extends ChangeNotifier {
     }
   }
 
+  /// Guarda un nou tió a una ubicació personalitzada (seleccionada al mapa)
+  Future<bool> saveTioAtLocation(double lat, double lng) async {
+    _errorMessage = null;
+    _successMessage = null;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final newTio = RadarTarget(
+        lat: lat,
+        lng: lng,
+        type: TargetType.realTio,
+      );
+
+      await _storageService.saveTio(newTio);
+      await loadTios();
+
+      _successMessage = "Tió amagat correctament al mapa!";
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = "Error guardant el tió: $e";
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Elimina un tió
   Future<void> deleteTio(String id) async {
     await _storageService.deleteTio(id);
@@ -104,6 +169,50 @@ class HideTioProvider extends ChangeNotifier {
   void clearMessages() {
     _errorMessage = null;
     _successMessage = null;
+    notifyListeners();
+  }
+
+  // ============== Fake Tions Settings ==============
+
+  /// Estableix el nombre de fake tions a generar
+  /// Si count és null, es generarà un nombre aleatori
+  Future<void> setFakeTionsCount(int? count) async {
+    _fakeTionsCount = count;
+    if (count != null) {
+      await _storageService.saveFakeTionsCount(count);
+    }
+    notifyListeners();
+  }
+
+  /// Estableix el radi de la zona per als fake tions (en metres)
+  Future<void> setFakeTionsZoneRadius(double radius) async {
+    _fakeTionsZoneRadius = radius;
+    await _storageService.saveFakeTionsZoneRadius(radius);
+    notifyListeners();
+  }
+
+  /// Estableix el centre de la zona per als fake tions
+  Future<void> setFakeTionsZoneCenter(double lat, double lng) async {
+    _fakeTionsZoneCenter = (lat: lat, lng: lng);
+    await _storageService.saveFakeTionsZoneCenter(lat, lng);
+    notifyListeners();
+  }
+
+  /// Estableix el centre i el radi de la zona per als fake tions alhora
+  Future<void> setFakeTionsZone(double lat, double lng, double radius) async {
+    _fakeTionsZoneCenter = (lat: lat, lng: lng);
+    _fakeTionsZoneRadius = radius;
+    await _storageService.saveFakeTionsZoneCenter(lat, lng);
+    await _storageService.saveFakeTionsZoneRadius(radius);
+    notifyListeners();
+  }
+
+  /// Reseteja les configuracions de fake tions als valors per defecte
+  Future<void> resetFakeTionsSettings() async {
+    _fakeTionsCount = null;
+    _fakeTionsZoneRadius = 300.0;
+    _fakeTionsZoneCenter = null;
+    await _storageService.resetFakeTionsSettings();
     notifyListeners();
   }
 
