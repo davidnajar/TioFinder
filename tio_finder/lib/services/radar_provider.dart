@@ -113,19 +113,41 @@ class RadarProvider extends ChangeNotifier {
     final fakeTionsCount = await _storageService.getFakeTionsCount();
     final fakeTionsRadius = await _storageService.getFakeTionsZoneRadius();
     final fakeTionsZoneCenter = await _storageService.getFakeTionsZoneCenter();
+    
+    // Carregar múltiples zones de fake tions
+    final fakeTionsZones = await _storageService.getFakeTionsZones();
 
-    // Determinar el centre per als fake tions (zona configurada o posició actual)
-    final fakeTionsCenterLat = fakeTionsZoneCenter?.lat ?? _currentPosition!.latitude;
-    final fakeTionsCenterLng = fakeTionsZoneCenter?.lng ?? _currentPosition!.longitude;
+    // Si hi ha múltiples zones configurades, usar-les
+    if (fakeTionsZones.isNotEmpty) {
+      // Generar fake tions per a cada zona
+      for (final zone in fakeTionsZones) {
+        // Calcular el nombre de fake tions per zona proporcionalment
+        final zoneCount = fakeTionsCount != null 
+            ? (fakeTionsCount / fakeTionsZones.length).ceil()
+            : null;
+        
+        final fakeTargets = _fakeGenerator.generateSpacedFakeTargets(
+          centerLat: zone.lat,
+          centerLng: zone.lng,
+          maxRadius: zone.radius,
+          count: zoneCount,
+        );
+        _allTargets.addAll(fakeTargets);
+      }
+    } else {
+      // Comportament antic: usar la zona única o la posició actual
+      final fakeTionsCenterLat = fakeTionsZoneCenter?.lat ?? _currentPosition!.latitude;
+      final fakeTionsCenterLng = fakeTionsZoneCenter?.lng ?? _currentPosition!.longitude;
 
-    // Generar targets falsos amb la configuració guardada
-    final fakeTargets = _fakeGenerator.generateSpacedFakeTargets(
-      centerLat: fakeTionsCenterLat,
-      centerLng: fakeTionsCenterLng,
-      maxRadius: fakeTionsRadius,
-      count: fakeTionsCount,
-    );
-    _allTargets.addAll(fakeTargets);
+      // Generar targets falsos amb la configuració guardada
+      final fakeTargets = _fakeGenerator.generateSpacedFakeTargets(
+        centerLat: fakeTionsCenterLat,
+        centerLng: fakeTionsCenterLng,
+        maxRadius: fakeTionsRadius,
+        count: fakeTionsCount,
+      );
+      _allTargets.addAll(fakeTargets);
+    }
 
     // Iniciar streams
     _startListening();

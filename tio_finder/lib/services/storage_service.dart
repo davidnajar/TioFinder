@@ -10,6 +10,7 @@ class StorageService {
   static const String _fakeTionsZoneRadiusKey = 'fake_tions_zone_radius';
   static const String _fakeTionsZoneCenterLatKey = 'fake_tions_zone_center_lat';
   static const String _fakeTionsZoneCenterLngKey = 'fake_tions_zone_center_lng';
+  static const String _fakeTionsZonesKey = 'fake_tions_zones';
   
   SharedPreferences? _prefs;
 
@@ -144,5 +145,63 @@ class StorageService {
       return (lat: lat, lng: lng);
     }
     return null;
+  }
+
+  // ============== Multiple Fake Tions Zones ==============
+
+  /// Guarda una llista de zones de fake tions
+  Future<void> saveFakeTionsZones(List<FakeTionsZone> zones) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    final jsonList = zones.map((z) => z.toJson()).toList();
+    await _prefs?.setString(_fakeTionsZonesKey, json.encode(jsonList));
+  }
+
+  /// Obté totes les zones de fake tions guardades
+  Future<List<FakeTionsZone>> getFakeTionsZones() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    final String? jsonString = _prefs?.getString(_fakeTionsZonesKey);
+    
+    if (jsonString == null || jsonString.isEmpty) {
+      return [];
+    }
+
+    try {
+      final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
+      return jsonList
+          .map((item) => FakeTionsZone.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Afegeix una nova zona de fake tions
+  Future<void> addFakeTionsZone(FakeTionsZone zone) async {
+    final zones = await getFakeTionsZones();
+    zones.add(zone);
+    await saveFakeTionsZones(zones);
+  }
+
+  /// Elimina una zona de fake tions per ID
+  Future<void> deleteFakeTionsZone(String id) async {
+    final zones = await getFakeTionsZones();
+    zones.removeWhere((z) => z.id == id);
+    await saveFakeTionsZones(zones);
+  }
+
+  /// Actualitza una zona de fake tions existent
+  Future<void> updateFakeTionsZone(FakeTionsZone zone) async {
+    final zones = await getFakeTionsZones();
+    final index = zones.indexWhere((z) => z.id == zone.id);
+    if (index != -1) {
+      zones[index] = zone;
+      await saveFakeTionsZones(zones);
+    }
+  }
+
+  /// Elimina totes les zones de fake tions
+  Future<void> deleteAllFakeTionsZones() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs?.remove(_fakeTionsZonesKey);
   }
 }
