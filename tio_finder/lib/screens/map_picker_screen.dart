@@ -124,7 +124,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.example.tio_finder',
+                  userAgentPackageName: 'com.tio_finder.app',
                 ),
                 // Cercle de la zona (per al mode fakeTionsZone)
                 if (widget.mode == MapPickerMode.fakeTionsZone)

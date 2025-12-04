@@ -4,6 +4,10 @@ import '../services/services.dart';
 import '../models/models.dart';
 import 'map_picker_screen.dart';
 
+/// Coordenades per defecte (Barcelona) si no es pot obtenir la ubicació
+const double _defaultLatitude = 41.3851;
+const double _defaultLongitude = 2.1734;
+
 /// Pantalla per amagar tiós
 class HideTioScreen extends StatefulWidget {
   const HideTioScreen({super.key});
@@ -256,8 +260,8 @@ class _HideTioScreenState extends State<HideTioScreen> {
       MaterialPageRoute(
         builder: (context) => MapPickerScreen(
           mode: MapPickerMode.tioLocation,
-          initialLat: currentPos?.lat ?? 41.3851,
-          initialLng: currentPos?.lng ?? 2.1734,
+          initialLat: currentPos?.lat ?? _defaultLatitude,
+          initialLng: currentPos?.lng ?? _defaultLongitude,
         ),
       ),
     );
@@ -466,8 +470,8 @@ class _HideTioScreenState extends State<HideTioScreen> {
         );
         return;
       }
-      initialLat = currentPos?.lat ?? 41.3851;
-      initialLng = currentPos?.lng ?? 2.1734;
+      initialLat = currentPos?.lat ?? _defaultLatitude;
+      initialLng = currentPos?.lng ?? _defaultLongitude;
     }
 
     if (!mounted) return;
