@@ -114,27 +114,110 @@ class _RadarScreenState extends State<RadarScreen> {
             );
           }
 
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Info superior
-                _buildInfoBar(provider),
-                const SizedBox(height: 32),
-                
-                // Radar
-                RadarWidget(
-                  targets: provider.polarTargets,
-                  size: MediaQuery.of(context).size.width - 48,
+          return Stack(
+            children: [
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Info superior
+                    _buildInfoBar(provider),
+                    const SizedBox(height: 32),
+                    
+                    // Indicador de fine search mode
+                    if (provider.isFineSearchMode)
+                      _buildFineSearchIndicator(provider),
+                    
+                    // Radar
+                    RadarWidget(
+                      targets: provider.polarTargets,
+                      size: MediaQuery.of(context).size.width - 48,
+                      isFineSearchMode: provider.isFineSearchMode,
+                    ),
+                    const SizedBox(height: 32),
+                    
+                    // Estadístiques
+                    _buildStats(provider),
+                  ],
                 ),
-                const SizedBox(height: 32),
-                
-                // Estadístiques
-                _buildStats(provider),
-              ],
-            ),
+              ),
+              
+              // Botó "Tió trobat" quan hi ha un tió pendent
+              if (provider.pendingFoundTio != null)
+                Positioned(
+                  bottom: 24,
+                  left: 24,
+                  right: 24,
+                  child: _buildFoundButton(provider),
+                ),
+            ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildFineSearchIndicator(RadarProvider provider) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.greenAccent.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.greenAccent, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.zoom_in, color: Colors.greenAccent, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            'Mode cerca fina (${provider.effectiveRadarRadius.toStringAsFixed(0)}m)',
+            style: const TextStyle(
+              color: Colors.greenAccent,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFoundButton(RadarProvider provider) {
+    return ElevatedButton(
+      onPressed: () {
+        provider.confirmFoundTio();
+        _showFoundDialog();
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.greenAccent,
+        foregroundColor: Colors.black,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '🎄',
+            style: TextStyle(fontSize: 24),
+          ),
+          SizedBox(width: 12),
+          Text(
+            'TIÓ TROBAT!',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(width: 12),
+          Text(
+            '🎄',
+            style: TextStyle(fontSize: 24),
+          ),
+        ],
       ),
     );
   }
