@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/services.dart';
+import '../utils/utils.dart';
 import '../widgets/widgets.dart';
 
-/// Pantalla del radar per buscar tiós
+/// Pantalla del radar per buscar tions
 class RadarScreen extends StatefulWidget {
   const RadarScreen({super.key});
 
@@ -401,12 +402,52 @@ class _RadarScreenState extends State<RadarScreen> {
   }
 
   Widget _buildStats(RadarProvider provider) {
-    final realTios = provider.allTargets
-        .where((t) => t.type.name == 'realTio' && !t.found)
-        .length;
-    final foundTios = provider.allTargets
-        .where((t) => t.type.name == 'realTio' && t.found)
-        .length;
+    // Calcular distància al tió més proper (no trobat)
+    String distanceText = '-';
+    if (provider.currentPosition != null) {
+      double? minDistance;
+      for (final target in provider.allTargets) {
+        if (target.type.name == 'realTio' && !target.found) {
+          final distance = GeoUtils.calculateDistance(
+            provider.currentPosition!.latitude,
+            provider.currentPosition!.longitude,
+            target.lat,
+            target.lng,
+          );
+          if (minDistance == null || distance < minDistance) {
+            minDistance = distance;
+          }
+        }
+      }
+      if (minDistance != null) {
+        if (minDistance < 1000) {
+          distanceText = '${minDistance.toStringAsFixed(0)}m';
+        } else {
+          distanceText = '${(minDistance / 1000).toStringAsFixed(1)}km';
+        }
+      }
+    }
+
+    // Tions a prop (objectius dins el radi efectiu del radar)
+    int tionsAprop = 0;
+    if (provider.currentPosition != null) {
+      for (final target in provider.allTargets) {
+        if (!target.found) {
+          final distance = GeoUtils.calculateDistance(
+            provider.currentPosition!.latitude,
+            provider.currentPosition!.longitude,
+            target.lat,
+            target.lng,
+          );
+          if (distance <= provider.effectiveRadarRadius) {
+            tionsAprop++;
+          }
+        }
+      }
+    }
+
+    // Força radar (valor màgic basat en la intensitat del senyal)
+    final radarPower = _calculateRadarPower(provider);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -419,23 +460,55 @@ class _RadarScreenState extends State<RadarScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatItem(
-            label: 'Tiós pendents',
-            value: realTios.toString(),
+            label: 'Dist. proper',
+            value: distanceText,
             color: Colors.greenAccent,
           ),
           _buildStatItem(
-            label: 'Tiós trobats',
-            value: foundTios.toString(),
-            color: Colors.grey,
+            label: 'Tions a prop',
+            value: tionsAprop.toString(),
+            color: Colors.orangeAccent,
           ),
           _buildStatItem(
-            label: 'Total objectius',
-            value: provider.allTargets.length.toString(),
-            color: Colors.white54,
+            label: 'Força radar',
+            value: '$radarPower%',
+            color: Colors.cyanAccent,
           ),
         ],
       ),
     );
+  }
+
+  /// Calcula la "força del radar" com a valor màgic
+  /// Basat en la proximitat al tió més proper (més proper = més força)
+  int _calculateRadarPower(RadarProvider provider) {
+    if (provider.currentPosition == null) return 0;
+    
+    double? minDistance;
+    for (final target in provider.allTargets) {
+      if (target.type.name == 'realTio' && !target.found) {
+        final distance = GeoUtils.calculateDistance(
+          provider.currentPosition!.latitude,
+          provider.currentPosition!.longitude,
+          target.lat,
+          target.lng,
+        );
+        if (minDistance == null || distance < minDistance) {
+          minDistance = distance;
+        }
+      }
+    }
+    
+    if (minDistance == null) return 0;
+    
+    // Convertir distància a percentatge (0-100)
+    // maxRange = radi màxim per considerar senyal
+    // clamp(0.0, 0.9) limita la distància normalitzada per garantir un mínim de 10%
+    // Així el radar mai queda completament sense senyal dins del rang
+    final maxRange = 500.0;
+    final normalizedDistance = (minDistance / maxRange).clamp(0.0, 0.9);
+    final power = ((1 - normalizedDistance) * 100).round();
+    return power.clamp(10, 100);
   }
 
   Widget _buildStatItem({

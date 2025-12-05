@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import '../services/services.dart';
 
-/// Provider per gestionar l'amagat de tiós
+/// Provider per gestionar l'amagat de tions
 class HideTioProvider extends ChangeNotifier {
   final LocationService _locationService = LocationService();
   final StorageService _storageService = StorageService();
@@ -68,7 +68,7 @@ class HideTioProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Carrega tots els tiós guardats
+  /// Carrega tots els tions guardats
   Future<void> loadTios() async {
     _savedTios = await _storageService.getAllTios();
     notifyListeners();
@@ -171,7 +171,7 @@ class HideTioProvider extends ChangeNotifier {
     await loadTios();
   }
 
-  /// Elimina tots els tiós
+  /// Elimina tots els tions
   Future<void> deleteAllTios() async {
     await _storageService.deleteAllTios();
     await loadTios();

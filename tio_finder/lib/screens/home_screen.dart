@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Pantalla principal amb opcions per buscar tiós
+/// Pantalla principal amb opcions per buscar tions
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Troba els tiós amagats!',
+                  'Radar de cerca de tions',
                   style: TextStyle(
                     fontSize: 18,
                     color: Colors.white.withValues(alpha: 0.7),

@@ -171,7 +171,7 @@ class RadarPainter extends CustomPainter {
 
       canvas.drawCircle(Offset(x, y), size, paint);
 
-      // Halo per als tiós reals
+      // Halo per als tions reals
       if (target.type == TargetType.realTio && !target.found) {
         final haloPaint = Paint()
           ..color = color.withValues(alpha: 0.3)
