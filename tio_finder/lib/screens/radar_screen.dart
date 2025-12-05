@@ -428,10 +428,23 @@ class _RadarScreenState extends State<RadarScreen> {
       }
     }
 
-    // Tions a prop (objectius dins el radar)
-    final tionsAprop = provider.allTargets
-        .where((t) => !t.found)
-        .length;
+    // Tions a prop (objectius dins el radi efectiu del radar)
+    int tionsAprop = 0;
+    if (provider.currentPosition != null) {
+      for (final target in provider.allTargets) {
+        if (!target.found) {
+          final distance = GeoUtils.calculateDistance(
+            provider.currentPosition!.latitude,
+            provider.currentPosition!.longitude,
+            target.lat,
+            target.lng,
+          );
+          if (distance <= provider.effectiveRadarRadius) {
+            tionsAprop++;
+          }
+        }
+      }
+    }
 
     // Força radar (valor màgic basat en la intensitat del senyal)
     final radarPower = _calculateRadarPower(provider);
@@ -489,9 +502,12 @@ class _RadarScreenState extends State<RadarScreen> {
     if (minDistance == null) return 0;
     
     // Convertir distància a percentatge (0-100)
-    // A 0m = 100%, a 500m+ = ~10%
+    // maxRange = radi màxim per considerar senyal
+    // clamp(0.0, 0.9) limita la distància normalitzada per garantir un mínim de 10%
+    // Així el radar mai queda completament sense senyal dins del rang
     final maxRange = 500.0;
-    final power = ((1 - (minDistance / maxRange).clamp(0.0, 0.9)) * 100).round();
+    final normalizedDistance = (minDistance / maxRange).clamp(0.0, 0.9);
+    final power = ((1 - normalizedDistance) * 100).round();
     return power.clamp(10, 100);
   }
 
