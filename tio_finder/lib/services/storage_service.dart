@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 
-/// Servei per gestionar l'emmagatzematge persistent dels tiós
+/// Servei per gestionar l'emmagatzematge persistent dels tions
 class StorageService {
   static const String _tiosKey = 'saved_tios';
   static const String _radarZoomKey = 'radar_zoom_level';
@@ -26,7 +26,7 @@ class StorageService {
     await _saveTios(tios);
   }
 
-  /// Obté tots els tiós guardats
+  /// Obté tots els tions guardats
   Future<List<RadarTarget>> getAllTios() async {
     _prefs ??= await SharedPreferences.getInstance();
     final String? jsonString = _prefs?.getString(_tiosKey);
@@ -45,7 +45,7 @@ class StorageService {
     }
   }
 
-  /// Obté només els tiós no trobats
+  /// Obté només els tions no trobats
   Future<List<RadarTarget>> getUnfoundTios() async {
     final tios = await getAllTios();
     return tios.where((tio) => !tio.found).toList();
@@ -69,7 +69,7 @@ class StorageService {
     await _saveTios(tios);
   }
 
-  /// Elimina tots els tiós
+  /// Elimina tots els tions
   Future<void> deleteAllTios() async {
     await _prefs?.remove(_tiosKey);
   }

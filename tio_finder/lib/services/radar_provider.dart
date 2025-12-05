@@ -105,7 +105,7 @@ class RadarProvider extends ChangeNotifier {
       return;
     }
 
-    // Carregar tiós reals
+    // Carregar tions reals
     final realTios = await _storageService.getUnfoundTios();
     _allTargets = List.from(realTios);
 

@@ -8,7 +8,7 @@ import 'map_picker_screen.dart';
 const double _defaultLatitude = 41.3851;
 const double _defaultLongitude = 2.1734;
 
-/// Pantalla per amagar tiós
+/// Pantalla per amagar tions
 class HideTioScreen extends StatefulWidget {
   const HideTioScreen({super.key});
 
@@ -83,7 +83,7 @@ class _HideTioScreenState extends State<HideTioScreen> {
               if (provider.successMessage != null)
                 _buildMessage(provider.successMessage!, Colors.green),
               
-              // Llista de tiós
+              // Llista de tions
               Expanded(
                 child: _buildTiosList(provider),
               ),
@@ -117,7 +117,7 @@ class _HideTioScreenState extends State<HideTioScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Per amagar tiós necessitem accedir a la teva ubicació.',
+              'Per amagar tions necessitem accedir a la teva ubicació.',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.white.withValues(alpha: 0.7),
@@ -857,7 +857,7 @@ class _HideTioScreenState extends State<HideTioScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF2A2A3E),
         title: const Text(
-          'Eliminar tots els tiós?',
+          'Eliminar tots els tions?',
           style: TextStyle(color: Colors.white),
         ),
         content: const Text(
