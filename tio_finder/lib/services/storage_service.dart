@@ -11,6 +11,7 @@ class StorageService {
   static const String _fakeTionsZoneCenterLatKey = 'fake_tions_zone_center_lat';
   static const String _fakeTionsZoneCenterLngKey = 'fake_tions_zone_center_lng';
   static const String _fakeTionsZonesKey = 'fake_tions_zones';
+  static const String _onboardingCompletedKey = 'onboarding_completed';
   
   SharedPreferences? _prefs;
 
@@ -205,5 +206,19 @@ class StorageService {
   Future<void> deleteAllFakeTionsZones() async {
     _prefs ??= await SharedPreferences.getInstance();
     await _prefs?.remove(_fakeTionsZonesKey);
+  }
+
+  // ============== Onboarding ==============
+
+  /// Marca l'onboarding com a completat
+  Future<void> setOnboardingCompleted() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs?.setBool(_onboardingCompletedKey, true);
+  }
+
+  /// Comprova si l'onboarding ha estat completat
+  Future<bool> isOnboardingCompleted() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs?.getBool(_onboardingCompletedKey) ?? false;
   }
 }
