@@ -56,7 +56,8 @@ class LocationService {
     try {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
+          accuracy: LocationAccuracy.best,
+          timeLimit: Duration(seconds: 10),
         ),
       );
       _lastPosition = position;
@@ -72,8 +73,9 @@ class LocationService {
     _positionSubscription?.cancel();
     _positionSubscription = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 2, // Actualitza cada 2 metres
+        accuracy: LocationAccuracy.best,
+        distanceFilter: 1, // Actualitza cada metre per a major precisió
+        timeLimit: Duration(seconds: 10),
       ),
     ).listen(
       (Position position) {

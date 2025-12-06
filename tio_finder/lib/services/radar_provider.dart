@@ -27,7 +27,7 @@ class RadarProvider extends ChangeNotifier {
   final AudioVibrateService _audioService = AudioVibrateService();
 
   static const double baseRadarRadius = 300.0; // metres (radi base)
-  static const double foundThreshold = 8.0; // metres per considerar "trobat"
+  static const double foundThreshold = 5.0; // metres per considerar "trobat" (millorat per a major precisió)
 
   /// Nivells de zoom disponibles (estil Dragon Ball)
   static const List<RadarZoomLevel> zoomLevels = [
