@@ -12,6 +12,10 @@ class StorageService {
   static const String _fakeTionsZoneCenterLngKey = 'fake_tions_zone_center_lng';
   static const String _fakeTionsZonesKey = 'fake_tions_zones';
   static const String _onboardingCompletedKey = 'onboarding_completed';
+  static const String _totalTiosFoundKey = 'total_tios_found';
+  static const String _totalDistanceWalkedKey = 'total_distance_walked';
+  static const String _fastestFindTimeKey = 'fastest_find_time';
+  static const String _sessionStartTimeKey = 'session_start_time';
   
   SharedPreferences? _prefs;
 
@@ -220,5 +224,67 @@ class StorageService {
   Future<bool> isOnboardingCompleted() async {
     _prefs ??= await SharedPreferences.getInstance();
     return _prefs?.getBool(_onboardingCompletedKey) ?? false;
+  }
+
+  // ============== Estadístiques de joc ==============
+
+  /// Incrementa el comptador de tions trobats totals
+  Future<void> incrementTotalTiosFound() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    final current = await getTotalTiosFound();
+    await _prefs?.setInt(_totalTiosFoundKey, current + 1);
+  }
+
+  /// Obté el total de tions trobats
+  Future<int> getTotalTiosFound() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs?.getInt(_totalTiosFoundKey) ?? 0;
+  }
+
+  /// Guarda la distància total recorreguda (en metres)
+  Future<void> addDistanceWalked(double meters) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    final current = await getTotalDistanceWalked();
+    await _prefs?.setDouble(_totalDistanceWalkedKey, current + meters);
+  }
+
+  /// Obté la distància total recorreguda
+  Future<double> getTotalDistanceWalked() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs?.getDouble(_totalDistanceWalkedKey) ?? 0.0;
+  }
+
+  /// Actualitza el temps de trobada més ràpid (en segons)
+  Future<void> updateFastestFindTime(int seconds) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    final current = await getFastestFindTime();
+    if (current == null || seconds < current) {
+      await _prefs?.setInt(_fastestFindTimeKey, seconds);
+    }
+  }
+
+  /// Obté el temps de trobada més ràpid
+  Future<int?> getFastestFindTime() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs?.getInt(_fastestFindTimeKey);
+  }
+
+  /// Guarda el temps d'inici de la sessió de radar actual
+  Future<void> saveSessionStartTime(DateTime time) async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs?.setInt(_sessionStartTimeKey, time.millisecondsSinceEpoch);
+  }
+
+  /// Obté el temps d'inici de la sessió de radar actual
+  Future<DateTime?> getSessionStartTime() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    final millis = _prefs?.getInt(_sessionStartTimeKey);
+    return millis != null ? DateTime.fromMillisecondsSinceEpoch(millis) : null;
+  }
+
+  /// Neteja el temps d'inici de sessió
+  Future<void> clearSessionStartTime() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    await _prefs?.remove(_sessionStartTimeKey);
   }
 }

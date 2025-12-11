@@ -21,33 +21,41 @@ class RadarWidget extends StatefulWidget {
 }
 
 class _RadarWidgetState extends State<RadarWidget>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+    with TickerProviderStateMixin {
+  late AnimationController _sweepController;
+  late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _sweepController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat();
+    
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _sweepController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _controller,
+      animation: Listenable.merge([_sweepController, _pulseController]),
       builder: (context, child) {
         return CustomPaint(
           size: Size(widget.size, widget.size),
           painter: RadarPainter(
-            sweepAngle: _controller.value * 2 * pi,
+            sweepAngle: _sweepController.value * 2 * pi,
+            pulseValue: _pulseController.value,
             targets: widget.targets,
             isHighZoom: widget.isHighZoom,
           ),

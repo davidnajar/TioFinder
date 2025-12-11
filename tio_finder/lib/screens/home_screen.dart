@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/storage_service.dart';
+import '../models/models.dart';
 
 /// Pantalla principal amb opcions per buscar tions
 class HomeScreen extends StatefulWidget {
@@ -11,6 +13,50 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _secretTapCount = 0;
   DateTime? _lastTapTime;
+  int _totalTiosFound = 0;
+  int _unlockedAchievements = 0;
+  bool _hasLoadedStats = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload stats when returning to this screen
+    if (_hasLoadedStats) {
+      _loadStats();
+    }
+  }
+
+  Future<void> _loadStats() async {
+    final storage = StorageService();
+    await storage.init();
+    final total = await storage.getTotalTiosFound();
+    final distance = await storage.getTotalDistanceWalked();
+    final fastest = await storage.getFastestFindTime();
+    
+    // Calcular assoliments desbloqueats
+    int unlocked = 0;
+    for (final achievement in Achievements.all) {
+      if (achievement.isUnlocked(
+        tiosFound: total,
+        distanceWalked: distance,
+        fastestTime: fastest,
+      )) {
+        unlocked++;
+      }
+    }
+    
+    setState(() {
+      _totalTiosFound = total;
+      _unlockedAchievements = unlocked;
+      _hasLoadedStats = true;
+    });
+  }
 
   void _onTitleTapped(BuildContext context) {
     final now = DateTime.now();
@@ -44,6 +90,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
+            tooltip: 'Configuració',
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -72,7 +129,82 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
-                const SizedBox(height: 80),
+                const SizedBox(height: 16),
+                // Badges amb estadístiques
+                if (_totalTiosFound > 0 || _unlockedAchievements > 0)
+                  Column(
+                    children: [
+                      if (_totalTiosFound > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.greenAccent.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.greenAccent.withValues(alpha: 0.5),
+                              width: 2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                '🏆',
+                                style: TextStyle(fontSize: 20),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '$_totalTiosFound tions trobats',
+                                style: const TextStyle(
+                                  color: Colors.greenAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (_totalTiosFound > 0 && _unlockedAchievements > 0)
+                        const SizedBox(height: 8),
+                      if (_unlockedAchievements > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amberAccent.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.amberAccent.withValues(alpha: 0.5),
+                              width: 2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                '🏅',
+                                style: TextStyle(fontSize: 20),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '$_unlockedAchievements assoliments',
+                                style: const TextStyle(
+                                  color: Colors.amberAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                const SizedBox(height: 48),
 
                 // (Botó amagar tió ocult → eliminat de la UI)
 
@@ -85,6 +217,28 @@ class _HomeScreenState extends State<HomeScreen> {
                   label: 'RADAR',
                   color: Colors.greenAccent,
                   onTap: () => Navigator.pushNamed(context, '/radar'),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Botó Estadístiques
+                _buildMenuButton(
+                  context,
+                  icon: Icons.bar_chart,
+                  label: 'ESTADÍSTIQUES',
+                  color: Colors.blueAccent,
+                  onTap: () => Navigator.pushNamed(context, '/statistics'),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Botó Assoliments
+                _buildMenuButton(
+                  context,
+                  icon: Icons.emoji_events,
+                  label: 'ASSOLIMENTS',
+                  color: Colors.amberAccent,
+                  onTap: () => Navigator.pushNamed(context, '/achievements'),
                 ),
 
                 const SizedBox(height: 80),

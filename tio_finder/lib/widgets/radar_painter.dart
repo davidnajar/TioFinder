@@ -5,12 +5,14 @@ import '../models/models.dart';
 /// CustomPainter per dibuixar el radar amb sweep animat
 class RadarPainter extends CustomPainter {
   final double sweepAngle; // Angle actual del sweep (0-2π)
+  final double pulseValue; // Valor de pulsació (0-1)
   final List<PolarTarget> targets;
   final double maxRadius;
   final bool isHighZoom;
 
   RadarPainter({
     required this.sweepAngle,
+    required this.pulseValue,
     required this.targets,
     this.maxRadius = 300.0,
     this.isHighZoom = false,
@@ -171,12 +173,27 @@ class RadarPainter extends CustomPainter {
 
       canvas.drawCircle(Offset(x, y), size, paint);
 
-      // Halo per als tions reals
+      // Halo per als tions reals (més gran si està molt a prop)
       if (target.type == TargetType.realTio && !target.found) {
+        // Halo exterior (pulsant si està molt a prop)
+        final isVeryClose = target.factor < 0.1;
+        
+        // Aplicar efecte de pulsació per objectius molt propers
+        final pulseFactor = isVeryClose ? (1.0 + pulseValue * 0.5) : 1.0;
+        final haloSize = isVeryClose ? size * 3.5 * pulseFactor : size * 2;
+        
         final haloPaint = Paint()
-          ..color = color.withValues(alpha: 0.3)
+          ..color = color.withValues(alpha: isVeryClose ? (0.3 + pulseValue * 0.2) : 0.3)
           ..style = PaintingStyle.fill;
-        canvas.drawCircle(Offset(x, y), size * 2, haloPaint);
+        canvas.drawCircle(Offset(x, y), haloSize, haloPaint);
+        
+        // Halo interior addicional per objectius molt propers amb pulsació
+        if (isVeryClose) {
+          final innerHaloPaint = Paint()
+            ..color = color.withValues(alpha: 0.5 + pulseValue * 0.2)
+            ..style = PaintingStyle.fill;
+          canvas.drawCircle(Offset(x, y), size * 1.5 * pulseFactor, innerHaloPaint);
+        }
       }
     }
   }
@@ -206,6 +223,7 @@ class RadarPainter extends CustomPainter {
   @override
   bool shouldRepaint(RadarPainter oldDelegate) {
     return oldDelegate.sweepAngle != sweepAngle ||
+        oldDelegate.pulseValue != pulseValue ||
         oldDelegate.targets != targets ||
         oldDelegate.isHighZoom != isHighZoom;
   }

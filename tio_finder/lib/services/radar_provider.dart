@@ -50,6 +50,10 @@ class RadarProvider extends ChangeNotifier {
   // Zoom configurable
   int _currentZoomLevelIndex = 0;
   RadarTarget? _pendingFoundTio;
+  
+  // Proximitat per feedback
+  double? _lastProximityDistance;
+  DateTime? _sessionStartTime;
 
   StreamSubscription<Position>? _positionSub;
   StreamSubscription<double>? _headingSub;
@@ -80,6 +84,10 @@ class RadarProvider extends ChangeNotifier {
   Future<void> init() async {
     await _storageService.init();
     await _audioService.init();
+    
+    // Guardar temps d'inici de sessió
+    _sessionStartTime = DateTime.now();
+    await _storageService.saveSessionStartTime(_sessionStartTime!);
     
     // Carregar nivell de zoom guardat
     _currentZoomLevelIndex = await _storageService.getRadarZoomLevel();
@@ -174,6 +182,16 @@ class RadarProvider extends ChangeNotifier {
     _locationService.startAllStreams();
 
     _positionSub = _locationService.positionStream.listen((position) {
+      // Calcular distància recorreguda
+      if (_currentPosition != null) {
+        final distance = GeoUtils.calculateDistance(
+          _currentPosition!.latitude,
+          _currentPosition!.longitude,
+          position.latitude,
+          position.longitude,
+        );
+        _storageService.addDistanceWalked(distance);
+      }
       _currentPosition = position;
       _checkProximity();
       _updatePolarTargets();
@@ -217,6 +235,26 @@ class RadarProvider extends ChangeNotifier {
         _audioService.playPoofSound();
       }
       // fakePersistent no fa res quan t'hi acostes
+    }
+
+    // Feedback de proximitat: vibrar quan ens acostem a un tió real
+    if (closestRealTioDistance < 50 && closestRealTioDistance < double.infinity) {
+      // Vibrar més fort com més proper estem
+      if (_lastProximityDistance == null || 
+          (closestRealTioDistance < _lastProximityDistance! && 
+           (_lastProximityDistance! - closestRealTioDistance) > 2)) {
+        // Vibració més intensa com més a prop
+        if (closestRealTioDistance < 10) {
+          _audioService.vibrateOnly(duration: 300);
+        } else if (closestRealTioDistance < 25) {
+          _audioService.vibrateOnly(duration: 150);
+        } else if (closestRealTioDistance < 50) {
+          _audioService.vibrateOnly(duration: 75);
+        }
+      }
+      _lastProximityDistance = closestRealTioDistance;
+    } else {
+      _lastProximityDistance = null;
     }
 
     // Gestionar el tió real pendent de confirmació
@@ -263,6 +301,15 @@ class RadarProvider extends ChangeNotifier {
 
     // Guardar a persistent storage
     _storageService.markTioAsFound(tio.id);
+    
+    // Actualitzar estadístiques
+    _storageService.incrementTotalTiosFound();
+    
+    // Calcular temps de trobada si hi ha sessió activa
+    if (_sessionStartTime != null) {
+      final timeElapsed = DateTime.now().difference(_sessionStartTime!).inSeconds;
+      _storageService.updateFastestFindTime(timeElapsed);
+    }
 
     // Reproduir so i vibrar
     _audioService.playFoundSound();
