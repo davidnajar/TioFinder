@@ -35,6 +35,9 @@ class TioFinderApp extends StatelessWidget {
           '/radar': (context) => const RadarScreen(),
           '/onboarding': (context) => const OnboardingScreen(),
           '/statistics': (context) => const StatisticsScreen(),
+          '/settings': (context) => const SettingsScreen(),
+          '/help': (context) => const HelpScreen(),
+          '/achievements': (context) => const AchievementsScreen(),
         },
       ),
     );

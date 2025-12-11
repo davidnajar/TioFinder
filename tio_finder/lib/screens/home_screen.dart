@@ -66,6 +66,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
+            tooltip: 'Configuració',
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -153,6 +164,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   label: 'ESTADÍSTIQUES',
                   color: Colors.blueAccent,
                   onTap: () => Navigator.pushNamed(context, '/statistics'),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Botó Assoliments
+                _buildMenuButton(
+                  context,
+                  icon: Icons.emoji_events,
+                  label: 'ASSOLIMENTS',
+                  color: Colors.amberAccent,
+                  onTap: () => Navigator.pushNamed(context, '/achievements'),
                 ),
 
                 const SizedBox(height: 80),

@@ -5,3 +5,6 @@ export 'radar_screen.dart';
 export 'map_picker_screen.dart';
 export 'onboarding_screen.dart';
 export 'statistics_screen.dart';
+export 'settings_screen.dart';
+export 'help_screen.dart';
+export 'achievements_screen.dart';
