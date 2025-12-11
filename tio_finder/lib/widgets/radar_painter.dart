@@ -171,12 +171,24 @@ class RadarPainter extends CustomPainter {
 
       canvas.drawCircle(Offset(x, y), size, paint);
 
-      // Halo per als tions reals
+      // Halo per als tions reals (més gran si està molt a prop)
       if (target.type == TargetType.realTio && !target.found) {
+        // Halo exterior (pulsant si està molt a prop)
+        final isVeryClose = target.factor < 0.1;
+        final haloSize = isVeryClose ? size * 3.5 : size * 2;
+        
         final haloPaint = Paint()
-          ..color = color.withValues(alpha: 0.3)
+          ..color = color.withValues(alpha: isVeryClose ? 0.5 : 0.3)
           ..style = PaintingStyle.fill;
-        canvas.drawCircle(Offset(x, y), size * 2, haloPaint);
+        canvas.drawCircle(Offset(x, y), haloSize, haloPaint);
+        
+        // Halo interior addicional per objectius molt propers
+        if (isVeryClose) {
+          final innerHaloPaint = Paint()
+            ..color = color.withValues(alpha: 0.7)
+            ..style = PaintingStyle.fill;
+          canvas.drawCircle(Offset(x, y), size * 1.5, innerHaloPaint);
+        }
       }
     }
   }

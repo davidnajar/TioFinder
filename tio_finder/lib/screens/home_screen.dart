@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/storage_service.dart';
 
 /// Pantalla principal amb opcions per buscar tions
 class HomeScreen extends StatefulWidget {
@@ -11,6 +12,22 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _secretTapCount = 0;
   DateTime? _lastTapTime;
+  int _totalTiosFound = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTotalTiosFound();
+  }
+
+  Future<void> _loadTotalTiosFound() async {
+    final storage = StorageService();
+    await storage.init();
+    final total = await storage.getTotalTiosFound();
+    setState(() {
+      _totalTiosFound = total;
+    });
+  }
 
   void _onTitleTapped(BuildContext context) {
     final now = DateTime.now();
@@ -42,6 +59,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Recarregar estadístiques quan tornem a aquesta pantalla
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadTotalTiosFound();
+    });
+
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       body: SafeArea(
@@ -72,7 +94,42 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
-                const SizedBox(height: 80),
+                const SizedBox(height: 16),
+                // Badge amb total de tions trobats
+                if (_totalTiosFound > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.greenAccent.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.greenAccent.withValues(alpha: 0.5),
+                        width: 2,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          '🏆',
+                          style: TextStyle(fontSize: 20),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$_totalTiosFound tions trobats',
+                          style: const TextStyle(
+                            color: Colors.greenAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 48),
 
                 // (Botó amagar tió ocult → eliminat de la UI)
 
@@ -85,6 +142,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   label: 'RADAR',
                   color: Colors.greenAccent,
                   onTap: () => Navigator.pushNamed(context, '/radar'),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Botó Estadístiques
+                _buildMenuButton(
+                  context,
+                  icon: Icons.bar_chart,
+                  label: 'ESTADÍSTIQUES',
+                  color: Colors.blueAccent,
+                  onTap: () => Navigator.pushNamed(context, '/statistics'),
                 ),
 
                 const SizedBox(height: 80),

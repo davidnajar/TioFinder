@@ -192,14 +192,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildFakeTionsPage() {
     return _buildPage(
-      icon: Icons.psychology,
-      iconColor: Colors.purple,
-      title: 'Fake Tions i Zones',
+      icon: Icons.bar_chart,
+      iconColor: Colors.blue,
+      title: 'Estadístiques i Rècords',
       description:
-          '🟡 Fake Tions: Pistes falses que apareixen al radar per fer més interessant la cerca.\n\n'
-          '📍 Zones de fake tions: Pots definir àrees específiques on es generaran fake tions automàticament.\n\n'
-          '⚙️ Configura-ho tot des del menú secret!',
-      emoji: '🎭',
+          '📊 Segueix el teu progrés amb estadístiques detallades!\n\n'
+          '🏆 Tions trobats, distància recorreguda i temps rècord\n\n'
+          '💪 Desbloqueja missatges motivacionals mentre progresses\n\n'
+          '📈 Mira les teves estadístiques des del menú principal',
+      emoji: '🎯',
     );
   }
 

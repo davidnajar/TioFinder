@@ -39,9 +39,16 @@ class _RadarScreenState extends State<RadarScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              '🎉',
-              style: TextStyle(fontSize: 64),
+            // Animació d'emojis celebrant
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('🎊', style: TextStyle(fontSize: 32)),
+                SizedBox(width: 8),
+                Text('🎉', style: TextStyle(fontSize: 64)),
+                SizedBox(width: 8),
+                Text('🎊', style: TextStyle(fontSize: 32)),
+              ],
             ),
             const SizedBox(height: 16),
             const Text(
@@ -61,6 +68,24 @@ class _RadarScreenState extends State<RadarScreen> {
                 color: Colors.white70,
               ),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            // Missatge addicional motivacional
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.greenAccent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                '🪵 Un tió més per a la teva col·lecció! 🪵',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white70,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -346,27 +371,81 @@ class _RadarScreenState extends State<RadarScreen> {
   }
 
   Widget _buildInfoBar(RadarProvider provider) {
+    // Calcular si estem molt a prop d'un tió
+    bool isVeryClose = false;
+    if (provider.currentPosition != null) {
+      for (final target in provider.allTargets) {
+        if (target.type.name == 'realTio' && !target.found) {
+          final distance = GeoUtils.calculateDistance(
+            provider.currentPosition!.latitude,
+            provider.currentPosition!.longitude,
+            target.lat,
+            target.lng,
+          );
+          if (distance < 25) {
+            isVeryClose = true;
+            break;
+          }
+        }
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: isVeryClose 
+            ? Colors.greenAccent.withValues(alpha: 0.15)
+            : Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
+        border: isVeryClose 
+            ? Border.all(
+                color: Colors.greenAccent.withValues(alpha: 0.5),
+                width: 2,
+              )
+            : null,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
         children: [
-          _buildInfoItem(
-            icon: Icons.explore,
-            label: 'Direcció',
-            value: '${provider.currentHeading.toStringAsFixed(0)}°',
-          ),
-          _buildInfoItem(
-            icon: Icons.my_location,
-            label: 'Precisió',
-            value: provider.currentPosition != null
-                ? '${provider.currentPosition!.accuracy.toStringAsFixed(0)}m'
-                : '-',
+          if (isVeryClose)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.greenAccent,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'MOLT A PROP!',
+                    style: TextStyle(
+                      color: Colors.greenAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildInfoItem(
+                icon: Icons.explore,
+                label: 'Direcció',
+                value: '${provider.currentHeading.toStringAsFixed(0)}°',
+              ),
+              _buildInfoItem(
+                icon: Icons.my_location,
+                label: 'Precisió',
+                value: provider.currentPosition != null
+                    ? '${provider.currentPosition!.accuracy.toStringAsFixed(0)}m'
+                    : '-',
+              ),
+            ],
           ),
         ],
       ),
