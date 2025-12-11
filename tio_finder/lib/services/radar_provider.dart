@@ -42,7 +42,6 @@ class RadarProvider extends ChangeNotifier {
   List<RadarTarget> _allTargets = [];
   List<PolarTarget> _polarTargets = [];
   Position? _currentPosition;
-  Position? _previousPosition;
   double _currentHeading = 0;
   bool _isInitialized = false;
   bool _hasLocationPermission = false;
@@ -184,16 +183,15 @@ class RadarProvider extends ChangeNotifier {
 
     _positionSub = _locationService.positionStream.listen((position) {
       // Calcular distància recorreguda
-      if (_previousPosition != null) {
+      if (_currentPosition != null) {
         final distance = GeoUtils.calculateDistance(
-          _previousPosition!.latitude,
-          _previousPosition!.longitude,
+          _currentPosition!.latitude,
+          _currentPosition!.longitude,
           position.latitude,
           position.longitude,
         );
         _storageService.addDistanceWalked(distance);
       }
-      _previousPosition = _currentPosition;
       _currentPosition = position;
       _checkProximity();
       _updatePolarTargets();

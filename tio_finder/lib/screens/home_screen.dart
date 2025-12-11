@@ -15,11 +15,21 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime? _lastTapTime;
   int _totalTiosFound = 0;
   int _unlockedAchievements = 0;
+  bool _hasLoadedStats = false;
 
   @override
   void initState() {
     super.initState();
     _loadStats();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload stats when returning to this screen
+    if (_hasLoadedStats) {
+      _loadStats();
+    }
   }
 
   Future<void> _loadStats() async {
@@ -44,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _totalTiosFound = total;
       _unlockedAchievements = unlocked;
+      _hasLoadedStats = true;
     });
   }
 
@@ -77,11 +88,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Recarregar estadístiques quan tornem a aquesta pantalla
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadStats();
-    });
-
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(

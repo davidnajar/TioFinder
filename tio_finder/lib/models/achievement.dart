@@ -46,8 +46,12 @@ class Achievement {
         return ((distanceWalked ?? 0) / requiredCount).clamp(0.0, 1.0);
       case AchievementType.fastestTime:
         if (fastestTime == null) return 0.0;
-        // Per al temps, com més ràpid millor
-        return (1.0 - (fastestTime / requiredCount)).clamp(0.0, 1.0);
+        // Per al temps, mostrar progrés basat en temps actual vs requerit
+        // Si ja s'ha assolit, retornar 1.0
+        if (fastestTime <= requiredCount) return 1.0;
+        // Si no, mostrar un progrés parcial basat en el temps màxim raonable (3x el requerit)
+        final maxTime = requiredCount * 3;
+        return (1.0 - ((fastestTime - requiredCount) / (maxTime - requiredCount))).clamp(0.0, 1.0);
     }
   }
 }
