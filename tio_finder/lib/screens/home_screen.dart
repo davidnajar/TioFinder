@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
+import '../models/models.dart';
 
 /// Pantalla principal amb opcions per buscar tions
 class HomeScreen extends StatefulWidget {
@@ -13,19 +14,36 @@ class _HomeScreenState extends State<HomeScreen> {
   int _secretTapCount = 0;
   DateTime? _lastTapTime;
   int _totalTiosFound = 0;
+  int _unlockedAchievements = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadTotalTiosFound();
+    _loadStats();
   }
 
-  Future<void> _loadTotalTiosFound() async {
+  Future<void> _loadStats() async {
     final storage = StorageService();
     await storage.init();
     final total = await storage.getTotalTiosFound();
+    final distance = await storage.getTotalDistanceWalked();
+    final fastest = await storage.getFastestFindTime();
+    
+    // Calcular assoliments desbloqueats
+    int unlocked = 0;
+    for (final achievement in Achievements.all) {
+      if (achievement.isUnlocked(
+        tiosFound: total,
+        distanceWalked: distance,
+        fastestTime: fastest,
+      )) {
+        unlocked++;
+      }
+    }
+    
     setState(() {
       _totalTiosFound = total;
+      _unlockedAchievements = unlocked;
     });
   }
 
@@ -61,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     // Recarregar estadístiques quan tornem a aquesta pantalla
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadTotalTiosFound();
+      _loadStats();
     });
 
     return Scaffold(
@@ -106,39 +124,79 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Badge amb total de tions trobats
-                if (_totalTiosFound > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.greenAccent.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.greenAccent.withValues(alpha: 0.5),
-                        width: 2,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          '🏆',
-                          style: TextStyle(fontSize: 20),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '$_totalTiosFound tions trobats',
-                          style: const TextStyle(
-                            color: Colors.greenAccent,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                // Badges amb estadístiques
+                if (_totalTiosFound > 0 || _unlockedAchievements > 0)
+                  Column(
+                    children: [
+                      if (_totalTiosFound > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.greenAccent.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.greenAccent.withValues(alpha: 0.5),
+                              width: 2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                '🏆',
+                                style: TextStyle(fontSize: 20),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '$_totalTiosFound tions trobats',
+                                style: const TextStyle(
+                                  color: Colors.greenAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      if (_totalTiosFound > 0 && _unlockedAchievements > 0)
+                        const SizedBox(height: 8),
+                      if (_unlockedAchievements > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amberAccent.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.amberAccent.withValues(alpha: 0.5),
+                              width: 2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                '🏅',
+                                style: TextStyle(fontSize: 20),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '$_unlockedAchievements assoliments',
+                                style: const TextStyle(
+                                  color: Colors.amberAccent,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
                 const SizedBox(height: 48),
 
